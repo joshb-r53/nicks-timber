@@ -31,4 +31,19 @@ Machine hours = board lm ÷ (feed speed m/min × 60 × feed efficiency %) + the 
 
 Selling price = cost ÷ (1 − margin %), never below the minimum job charge.
 
+**Hardwood tab**
+
+Pick the hardwood and enter the size the customer wants (e.g. 25 × 150 mm) and the finished linear metres. Each hardwood in Settings → Hardwoods has its own cost price per m³ and its own waste allowances:
+
+- Raw width = finished width × (1 + width waste %), so 150 mm at 30% = 195 mm.
+- Raw thickness = finished thickness + thickness allowance (mm, 0 by default).
+- Raw length = finished lm × (1 + length waste %, 0 by default).
+- Raw m³ = raw thickness × raw width × raw length. The **Copy m³** button copies this figure for the mill line.
+
+The page then shows:
+
+- Hardwood: raw m³ × cost price, sold at the hardwood margin.
+- Milling (lump sum): the softwood costing model run as a milling-only job on the raw board, using that hardwood's feed speed, cutter life and set-up time, sold at the main profit margin.
+- Delivery, the job total ex and inc VAT (never below the minimum job charge), profit, and rates per linear metre and per m³.
+
 All settings start as example figures. Replace them with real wages, tariffs, bills, timber prices and timed feed speeds. Settings save in the browser; use "Back up or move settings" to copy them to another device.
