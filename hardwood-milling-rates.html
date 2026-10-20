@@ -1,0 +1,676 @@
+<title>Nicks Timber Hardwood Milling</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Hardwood milling: the same layout and tokens as the Scandinavian joinery milling rates page. A cutting list on top,
+   the milling charge and raw stock on the left, what the job costs us on the right. Everyone sees the quote; the admin
+   panel (running costs, hardwood cost prices and waste, feed speeds) shows only to Editors, who are the only ones the
+   db lets read or write those inputs. */
+:root{
+  --bg:#f3f4f1; --panel:#fbfbf9; --ink:#1c2420; --muted:#5f6a64; --line:#dfe2dc;
+  --pine:#2f5d50; --pine-soft:#e3ece8; --accent-ink:#ffffff;
+  --oak:#8a5a2b; --oak-soft:#f2e8dc;
+  --mark:#e0a224; --machine:#2f5d50; --setup:#c9662c; --cutters:#7a8f3a; --newset:#8a94a6;
+  --warn:#b4472a; --good:#2f7a57;
+  --r:12px;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131816; --panel:#181e1b; --ink:#e7ece9; --muted:#9aa59f; --line:#2a332f;
+  --pine:#7fc2a8; --pine-soft:#22332c; --accent-ink:#0f1712;
+  --oak:#d9a46c; --oak-soft:#2e2419;
+  --mark:#f0b443; --machine:#7fc2a8; --setup:#e5824a; --cutters:#a8bf5a; --newset:#8f9ab0;
+  --warn:#f08a6a; --good:#6fc79a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131816; --panel:#181e1b; --ink:#e7ece9; --muted:#9aa59f; --line:#2a332f;
+  --pine:#7fc2a8; --pine-soft:#22332c; --accent-ink:#0f1712;
+  --oak:#d9a46c; --oak-soft:#2e2419;
+  --mark:#f0b443; --machine:#7fc2a8; --setup:#e5824a; --cutters:#a8bf5a; --newset:#8f9ab0;
+  --warn:#f08a6a; --good:#6fc79a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px 20px;flex-wrap:wrap;background:var(--panel);border-bottom:1px solid var(--line);padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--oak);color:var(--panel);display:grid;place-items:center;font:700 15px var(--body);letter-spacing:-.02em;flex:none}
+h1,h2,h3{font-family:var(--body);font-weight:600;letter-spacing:-.01em;margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:18px} h2{font-size:17px} h3{font-size:14px}
+p{margin:0}
+.eyebrow{display:block;font-size:12px;color:var(--muted)}
+.role{font:500 12px var(--body);padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--bg);white-space:nowrap}
+.role.admin{border-color:var(--pine);color:var(--pine);background:var(--pine-soft)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:22px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:stretch}
+.main .list{grid-column:1/-1;grid-row:1}
+.main .quote{grid-column:1;grid-row:2;align-content:start}
+.main .why{grid-column:2;grid-row:2;align-content:start}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}.main .list,.main .quote,.main .why{grid-column:1;grid-row:auto}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:grid;gap:16px;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+label{display:flex;flex-direction:column;gap:2px;font-size:13.5px;font-weight:500;min-width:0}
+label small{font-weight:400;color:var(--muted);font-size:12px;margin-bottom:6px}
+input,select{font:500 15px var(--body);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--pine);outline-offset:1px}
+/* Cutting list: one row per profile run. */
+.lines{display:grid;gap:12px}
+.line{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.3fr) repeat(3,minmax(0,.65fr)) auto;gap:10px;align-items:end;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.line:last-child{border-bottom:0;padding-bottom:0}
+.line .opts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:13px;color:var(--muted)}
+.line .opts b{color:var(--oak);font-weight:600}
+@media (max-width:900px){.line{grid-template-columns:repeat(3,minmax(0,1fr))}.line .prof{grid-column:1/3}.line .rm{grid-column:3;grid-row:1;justify-self:end}.line .wood{grid-column:1/-1}}
+@media (max-width:560px){.line{grid-template-columns:repeat(2,minmax(0,1fr))}.line .prof,.line .wood{grid-column:1/-1}.line .rm{grid-column:2;grid-row:auto;justify-self:end}}
+.price{display:grid;gap:4px}
+.price .label{font:600 15px var(--body);color:var(--ink)}
+.price .amount{font:700 clamp(3.4rem,9vw,5.6rem)/1 var(--body);letter-spacing:-.035em;color:var(--pine);font-variant-numeric:tabular-nums}
+.price .sub{font-size:16px;color:var(--muted)}
+/* Raw stock: the second figure the ERP needs, in timber colour so it never reads as money. */
+.stock{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;background:var(--oak-soft);border-radius:10px;padding:12px 14px}
+.stock .label{font:600 14px var(--body);display:block}
+.stock .m3{font:600 30px/1.1 var(--mono);color:var(--oak);font-variant-numeric:tabular-nums;display:block}
+.stock .sub{font-size:13px;color:var(--muted);display:block}
+button.oak{background:var(--oak);color:var(--panel)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:500 12px var(--body);padding:3px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.chip.warn{border-color:var(--mark);color:var(--ink);background:color-mix(in srgb,var(--mark) 18%,transparent)}
+dl.runs{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;margin:0;font-size:14px;border-top:1px solid var(--line);padding-top:12px}
+dl.runs dt{min-width:0}
+dl.runs dt b{font-weight:600}
+dl.runs dt small{display:block;color:var(--muted);font-size:12px}
+dl.runs dd{margin:0;text-align:right;font-weight:500;font-variant-numeric:tabular-nums;align-self:center}
+dl.runs dd.need{color:var(--warn);font-weight:500;font-size:13px}
+dl.runs .tot{border-top:1px solid var(--ink);padding-top:8px;font-weight:700;font-size:16px}
+.why{gap:12px}
+.cbar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;background:var(--line)}
+.cbar i{display:block;height:100%}
+dl.breakdown{display:grid;grid-template-columns:auto 1fr auto;gap:7px 10px;margin:0;align-items:center}
+dl.breakdown dt{display:contents}
+dl.breakdown .sw{width:10px;height:10px;border-radius:2px}
+dl.breakdown .name small{color:var(--muted);display:block;font-size:12px}
+dl.breakdown dd{margin:0;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+dl.breakdown .total{border-top:1px solid var(--line);padding-top:7px;font-weight:600}
+.explain{font-size:13.5px;color:var(--muted)}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:9px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font:500 12px var(--body);color:var(--muted);background:var(--bg)}
+td{font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td.strong{color:var(--pine);font-weight:600}
+.block{display:grid;gap:12px}
+.block-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px}
+.block-head p{color:var(--muted);font-size:.95rem;max-width:65ch}
+.block-head select{width:auto;min-width:12em}
+button{font:600 13.5px var(--body);background:var(--pine);color:var(--accent-ink);border:0;border-radius:9px;padding:9px 16px;cursor:pointer}
+button.ghost{background:transparent;color:var(--pine);border:1px solid var(--pine)}
+button.ghost.small{padding:7px 12px;font-size:12.5px}
+button:disabled{opacity:.5;cursor:default}
+.toast{font-size:.85rem;color:var(--muted)}
+.status{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.status .dot{width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block}
+.status.stale .dot{background:var(--mark)}
+#admin{border-color:var(--pine)}
+#admin summary{cursor:pointer;font-weight:600;color:var(--pine);list-style-position:inside}
+#admin[open] summary{margin-bottom:4px}
+#admin fieldset{border:0;margin:0;padding:0;display:grid;gap:12px;min-width:0}
+#admin legend{font:600 14px var(--body);margin-bottom:10px;padding:0}
+#admin table input{padding:6px 9px;font-size:14px}
+#admin table td{padding:6px 8px}
+#admin table input[type="checkbox"]{width:17px;height:17px;accent-color:var(--pine)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 12px}
+@media (max-width:700px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.grid3{grid-template-columns:minmax(0,1fr)}}
+.readout{display:flex;flex-wrap:wrap;gap:8px 24px;background:var(--pine-soft);border-radius:10px;padding:12px 14px;font-size:13.5px}
+.readout b{display:block;font-size:20px;font-weight:600;color:var(--pine);font-variant-numeric:tabular-nums}
+.adminbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px;display:grid;gap:6px}
+</style>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">NT</span>
+    <div><h1>Hardwood Milling</h1><span class="eyebrow">Hardwood joinery timber · Nicks &amp; Co (Timber), Canada Wharf</span></div>
+  </div>
+  <span class="role" id="role">Team view</span>
+</header>
+
+<div class="wrap">
+  <div class="main">
+    <section class="panel list" aria-labelledby="h-list">
+      <div class="block-head"><h2 id="h-list">What needs milling?</h2><button type="button" class="ghost small" id="addLine">Add a profile</button></div>
+      <div class="lines" id="lines"></div>
+      <p class="small muted">One row per profile or size. Enter the size the customer wants: the hardwood's width allowance is added for you to give the raw stock to pull for the mill. Each row is priced on its own run length, so the longer the run, the bigger the reduction.</p>
+    </section>
+
+    <aside class="panel quote" aria-live="polite" aria-labelledby="h-quote">
+      <div class="price">
+        <span class="label" id="h-quote">Milling charge</span>
+        <span class="amount" id="priceEx">–</span>
+        <span class="sub" id="priceInc"></span>
+      </div>
+      <div class="stock">
+        <div><span class="label">Estimated raw stock</span><span class="m3" id="stockM3">–</span><span class="sub" id="stockSub"></span></div>
+        <button type="button" class="oak" id="copyStock">Copy m³</button>
+      </div>
+      <dl class="runs" id="runs"></dl>
+      <div class="chips"><button type="button" id="copyCharge">Copy milling charge for the ERP</button><button type="button" class="ghost" id="copyRuns">Copy each run</button><span class="toast" id="copyChargeMsg"></span></div>
+      <div class="chips" id="chips"></div>
+      <p class="status" id="status"><span class="dot"></span>Loading current rates…</p>
+    </aside>
+
+    <section class="panel why" aria-labelledby="h-why">
+      <h2 id="h-why">What this job costs us</h2>
+      <div class="cbar" id="cbar" role="img" aria-label="Cost of the job by type"></div>
+      <dl class="breakdown" id="breakdown"></dl>
+      <p class="explain" id="explain"></p>
+    </section>
+  </div>
+
+  <section class="block">
+    <div class="block-head">
+      <div><h2>Milling rates by run length</h2><p>£ per metre ex VAT for the hardwood you pick. Each run is priced at the band for its whole length: short runs pay the set-up fee on top, and the longest runs are charged as a share of the hardwood's cost.</p></div>
+      <div class="chips"><label for="cardWood" class="small">Hardwood<select id="cardWood"></select></label><button type="button" id="copyCard" class="ghost">Copy rate card</button><span class="toast" id="copyMsg"></span></div>
+    </div>
+    <div class="tablewrap"><table id="card"></table></div>
+  </section>
+
+  <details class="panel" id="admin" hidden>
+    <summary>Admin: hardwood prices, waste and mill settings</summary>
+    <p class="small muted">Only Editors of this page see this panel or the figures in it. Team members see the milling charge, the raw stock and what each job costs, in pounds only. Changes apply to everyone once you save.</p>
+    <div class="readout" id="readout"></div>
+    <form id="adminForm" autocomplete="off" style="display:grid;gap:22px">
+      <fieldset>
+        <legend>Hardwoods</legend>
+        <p class="small muted">Cost price is what you pay per m³. Width waste is added to the customer's finished width to get the raw width, so 150 mm at 30% is cut from 195 mm. Feed speed and cutter life are a percentage of the profile's softwood figures below: oak at 60% runs at 60% of the speed and wears cutters in about half the metres at 50%.</p>
+        <div class="tablewrap"><table id="woodTable"></table></div>
+        <div><button type="button" class="ghost small" id="addWood">Add a hardwood</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Monthly running costs</legend>
+        <p class="small muted">Set the share of each cost that belongs to the mill. If the yard team also loads lorries and serves the counter, put in the part of their time spent feeding and stacking for the mill.</p>
+        <div class="tablewrap"><table id="costTable"></table></div>
+        <div><button type="button" class="ghost small" id="addCost">Add a cost</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Mill hours</legend>
+        <div class="grid3">
+          <label for="a-daysMonth">Working days <small>Per month</small><input id="a-daysMonth" type="number" min="1" step="0.1"></label>
+          <label for="a-hoursDay">Shift length <small>Hours per day</small><input id="a-hoursDay" type="number" min="1" step="0.25"></label>
+          <label for="a-utilisation">Time on jobs <small>% of the shift running or setting up</small><input id="a-utilisation" type="number" min="5" max="100" step="1"></label>
+          <label for="a-feedEff">Feed efficiency <small>% of feed speed after gaps between pieces</small><input id="a-feedEff" type="number" min="5" max="100" step="1"></label>
+          <label for="a-cutterSet">Cutter set <small>£ per set</small><input id="a-cutterSet" type="number" min="0" step="10"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Profiles</legend>
+        <p class="small muted">Feed speed and cutter life are the softwood figures for that profile; each hardwood's percentages above scale them. Tick "New set" where the profile needs its own cutters made for each job.</p>
+        <div class="tablewrap"><table id="profTable"></table></div>
+        <div><button type="button" class="ghost small" id="addProf">Add a profile</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Pricing</legend>
+        <div class="grid3">
+          <label for="a-margin">Profit margin <small>% of price ex VAT</small><input id="a-margin" type="number" min="0" max="90" step="1"></label>
+          <label for="a-roundTo">Round the charge up to <small>Nearest</small><select id="a-roundTo"><option value="1">£1</option><option value="5">£5</option><option value="10">£10</option></select></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Run-length bands</legend>
+        <p class="small muted">Short runs pay the full rate plus the set-up fee. Longer runs get the reduction for their band on every metre. Past the last band, milling is charged as a share of what the raw stock costs us.</p>
+        <div class="grid3">
+          <label for="a-setupUpTo">Short runs up to <small>Metres</small><input id="a-setupUpTo" type="number" min="0" step="5"></label>
+          <label for="a-setupFee">Set-up fee on short runs <small>£ ex VAT</small><input id="a-setupFee" type="number" min="0" step="1"></label>
+          <label for="a-timberPct">Past the last band <small>% of the raw stock cost</small><input id="a-timberPct" type="number" min="0" max="100" step="1"></label>
+        </div>
+        <div class="tablewrap"><table id="bandTable"></table></div>
+        <div><button type="button" class="ghost small" id="addBand">Add a band</button></div>
+      </fieldset>
+      <div class="adminbar">
+        <button type="submit" id="saveRates" disabled>Save for everyone</button>
+        <button type="button" class="ghost" id="resetRates" disabled>Discard changes</button>
+        <span class="toast" id="adminMsg">The quote above previews your changes before you save.</span>
+      </div>
+    </form>
+  </details>
+
+  <footer>
+    <p>The milling charge covers the mill's running costs for the time a profile takes on the moulder in that hardwood (electric, the mill team and the yard team who feed it) and wear on the cutters, plus a margin. Short runs add a set-up fee, longer runs get a reduction, and bespoke profiles add the cost of new cutters. The hardwood itself is charged separately.</p>
+    <p>Raw stock is the customer's finished thickness × the finished width plus the hardwood's width allowance × the metres. Allow extra if the boards need cross-cutting for defects.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Cost model as on the joinery page: the mill's monthly running costs spread over its hours on jobs give a cost
+  // per minute. Each row costs (metres / effective feed speed) minutes, slowed by the hardwood's feed speed %,
+  // plus one set-up, plus cutter wear per metre (shortened by its cutter life %), plus a new set where needed.
+  // Inputs live in admin/rates (Editors only). Saving also writes public/pricing, the per-metre amounts already
+  // multiplied out, which everyone reads.
+  const VAT = 0.2;
+  // Starting figures until an admin saves their own. Running costs and profiles match the joinery page; hardwood
+  // prices, waste and speeds are examples apart from American white oak at £2,000/m³ and 30% width waste.
+  const DEFAULTS = {
+    woods: [
+      { id: "awo", name: "American white oak", price: 2000, wasteW: 30, speed: 60, life: 50 },
+      { id: "eo", name: "European oak", price: 2200, wasteW: 30, speed: 60, life: 50 },
+      { id: "abw", name: "American black walnut", price: 3200, wasteW: 35, speed: 70, life: 60 },
+      { id: "ash", name: "American ash", price: 1300, wasteW: 25, speed: 70, life: 60 },
+      { id: "sap", name: "Sapele", price: 1600, wasteW: 15, speed: 70, life: 50 },
+      { id: "iro", name: "Iroko", price: 1700, wasteW: 20, speed: 60, life: 35 },
+      { id: "tul", name: "Tulipwood (American poplar)", price: 950, wasteW: 15, speed: 85, life: 80 }
+    ],
+    costs: [{ name: "Electric", month: 9000, share: 75 }, { name: "Mill staff", month: 17000, share: 100 }, { name: "Yard staff", month: 10000, share: 50 }],
+    daysMonth: 21.7, hoursDay: 8, utilisation: 70, feedEff: 80, cutterSet: 200,
+    profiles: [
+      { id: "par", name: "PAR / PSE (planed all round)", feed: 15, setupMins: 15, cutterM: 6000, newSet: false },
+      { id: "clad", name: "Cladding (shiplap, T&G, loglap)", feed: 10, setupMins: 30, cutterM: 4000, newSet: false },
+      { id: "flooring", name: "Flooring and matchboard", feed: 10, setupMins: 30, cutterM: 4000, newSet: false },
+      { id: "skirt", name: "Skirting and architrave (stock profile)", feed: 8, setupMins: 30, cutterM: 3000, newSet: false },
+      { id: "mould", name: "Mouldings and beads (stock profile)", feed: 8, setupMins: 30, cutterM: 3000, newSet: false },
+      { id: "bespoke", name: "Bespoke profile (new cutters)", feed: 6, setupMins: 60, cutterM: 2000, newSet: true }
+    ],
+    margin: 30, roundTo: 1,
+    setupFee: 20, setupUpTo: 50, timberPct: 5,
+    bands: [[100, 10], [200, 20], [400, 30], [600, 40], [1000, 50]]
+  };
+  const PRICE_KEYS = ["setupFee", "setupUpTo", "timberPct"];
+  const $ = id => document.getElementById(id);
+  const gbp = (n, dp = 2) => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const m3 = v => (v + 1e-9).toFixed(3);
+  const mm = v => v.toLocaleString("en-GB", { maximumFractionDigits: 1 });
+
+  let saved = null, pricing = null, published = null;
+  let updatedAt = null, isAdmin = false, dirty = false, db = null, state = "loading", chargeEx = null, stockM3 = null;
+
+  function hourRate(r) {
+    const month = r.costs.reduce((s, c) => s + (c.month || 0) * Math.min(c.share ?? 100, 100) / 100, 0);
+    const hours = Math.max(r.daysMonth * r.hoursDay * r.utilisation / 100, 1);
+    return { month, hours, rate: month / hours };
+  }
+  // Raw admin inputs -> amounts in £. The team's copy holds no hourly rate, feed speed or cost price on its own.
+  function toPricing(r) {
+    const perMin = hourRate(r).rate / 60, eff = Math.max(r.feedEff, 5) / 100;
+    const timberPct = r.timberPct ?? DEFAULTS.timberPct;
+    return {
+      profiles: r.profiles.map(p => ({
+        id: p.id, name: p.name,
+        machineM: perMin / Math.max(p.feed * eff, 0.1),
+        wearM: p.newSet ? 0 : r.cutterSet / Math.max(p.cutterM, 1),
+        setup: perMin * p.setupMins,
+        newSet: p.newSet ? r.cutterSet : 0
+      })),
+      woods: (r.woods || DEFAULTS.woods).map(w => ({
+        id: w.id, name: w.name, wasteW: w.wasteW,
+        slow: 100 / Math.max(w.speed, 5), wear: 100 / Math.max(w.life, 5),
+        longRunM3: w.price * timberPct / 100
+      })),
+      markup: 1 / (1 - Math.min(r.margin, 90) / 100),
+      roundTo: r.roundTo || 1,
+      setupFee: r.setupFee ?? DEFAULTS.setupFee, setupUpTo: r.setupUpTo ?? DEFAULTS.setupUpTo,
+      timberPct, bands: r.bands || DEFAULTS.bands
+    };
+  }
+
+  // ---- Cutting list
+  let lines = [{ prof: "par", wood: "awo", thick: 25, width: 150, metres: 100 }];
+  try { const s = JSON.parse(localStorage.getItem("hwMillLines")); if (Array.isArray(s) && s.length) lines = s; } catch (e) {}
+  const keep = () => { try { localStorage.setItem("hwMillLines", JSON.stringify(lines)); } catch (e) {} };
+  const profOf = (id, P) => P.profiles.find(p => p.id === id) || P.profiles[0];
+  const woodOf = (id, P) => P.woods.find(w => w.id === id) || P.woods[0];
+
+  function tiers(P) {
+    const out = [{ from: 0, to: P.setupUpTo, off: 0, kind: "setup" }];
+    let from = P.setupUpTo;
+    for (const [to, off] of P.bands.slice().sort((a, b) => a[0] - b[0])) {
+      if (to <= from) continue;
+      out.push({ from, to, off, kind: "off" }); from = to;
+    }
+    out.push({ from, to: Infinity, kind: "timber" });
+    return out;
+  }
+  const tierOf = (m, P) => tiers(P).find(t => m <= t.to);
+  const fmtM = n => n.toLocaleString("en-GB");
+  const tierName = t => t.to === Infinity ? `Over ${fmtM(t.from)} m` : t.from === 0 ? `Up to ${fmtM(t.to)} m` : `${fmtM(t.from)}–${fmtM(t.to)} m`;
+  // Full milling rate per metre for a profile in a hardwood, before any band reduction.
+  const fullRate = (p, w, P) => (p.machineM * w.slow + p.wearM * w.wear) * P.markup;
+
+  function lineCost(l, P) {
+    const p = profOf(l.prof, P), w = woodOf(l.wood, P), m = Math.max(l.metres || 0, 0);
+    const sized = l.thick > 0 && l.width > 0;
+    const rawW = sized ? l.width * (1 + (w.wasteW || 0) / 100) : 0;
+    const rawM3perM = sized ? l.thick * rawW / 1e6 : 0;
+    const rawM3 = rawM3perM * m;
+    const machine = m * p.machineM * w.slow, wear = m * p.wearM * w.wear;
+    const setup = m > 0 ? p.setup : 0, newSet = m > 0 ? p.newSet : 0;
+    const full = fullRate(p, w, P), cutters = newSet * P.markup, t = tierOf(m, P);
+    let rate = null, charge = 0, needSize = false;
+    if (m > 0) {
+      if (t.kind === "setup") { rate = full; charge = m * rate + P.setupFee + cutters; }
+      else if (t.kind === "off") { rate = full * (1 - t.off / 100); charge = m * rate + cutters; }
+      else if (sized) { rate = rawM3perM * w.longRunM3; charge = m * rate + cutters; }
+      else { needSize = true; charge = cutters; }
+    }
+    return { p, w, m, sized, rawW, rawM3, machine, wear, setup, newSet, cost: machine + wear + setup + newSet, t, rate, cutters, charge, needSize };
+  }
+  function job(P) {
+    const rows = lines.map(l => lineCost(l, P));
+    const t = { machine: 0, wear: 0, setup: 0, newSet: 0, cost: 0, m: 0, rawM3: 0 };
+    rows.forEach(r => {
+      r.price = r.m > 0 && !r.needSize ? Math.ceil(r.charge / P.roundTo - 1e-9) * P.roundTo : 0;
+      for (const k in t) t[k] += r[k];
+    });
+    const live = rows.filter(r => r.m > 0);
+    return { rows, ...t, price: rows.reduce((s, r) => s + r.price, 0), needSize: rows.some(r => r.needSize), unsized: live.some(r => !r.sized), runs: live.length };
+  }
+
+  function drawLines() {
+    const P = pricing, box = $("lines");
+    box.innerHTML = lines.map((l, i) => {
+      const popts = P ? P.profiles.map(p => `<option value="${esc(p.id)}"${p.id === l.prof ? " selected" : ""}>${esc(p.name)}</option>`).join("") : "";
+      const wopts = P ? P.woods.map(w => `<option value="${esc(w.id)}"${w.id === l.wood ? " selected" : ""}>${esc(w.name)}</option>`).join("") : "";
+      return `<div class="line" data-i="${i}">
+        <label class="prof" for="pf${i}">Run ${i + 1}: profile <small>What the moulder runs</small><select id="pf${i}" data-k="prof">${popts}</select></label>
+        <label class="wood" for="wd${i}">Hardwood <small>Sets the raw width and run speed</small><select id="wd${i}" data-k="wood">${wopts}</select></label>
+        <label for="th${i}">Thickness <small>mm, finished</small><input id="th${i}" data-k="thick" type="number" min="0" step="1" inputmode="decimal" placeholder="e.g. 25" value="${l.thick ?? ""}"></label>
+        <label for="wi${i}">Width <small>mm, finished</small><input id="wi${i}" data-k="width" type="number" min="0" step="1" inputmode="decimal" placeholder="e.g. 150" value="${l.width ?? ""}"></label>
+        <label for="mt${i}">Metres <small>Linear, finished</small><input id="mt${i}" data-k="metres" type="number" min="0" step="1" inputmode="decimal" value="${l.metres ?? ""}"></label>
+        <button type="button" class="ghost small rm" data-rm="${i}"${lines.length < 2 ? " disabled" : ""} aria-label="Remove row ${i + 1}">Remove</button>
+        <div class="opts" id="lo${i}"></div>
+      </div>`;
+    }).join("");
+  }
+  $("lines").addEventListener("input", e => {
+    const row = e.target.closest(".line"); if (!row) return;
+    const l = lines[+row.dataset.i], k = e.target.dataset.k;
+    l[k] = k === "prof" || k === "wood" ? e.target.value : parseFloat(e.target.value);
+    keep(); render(false);
+  });
+  $("lines").addEventListener("click", e => {
+    if (!e.target.matches("[data-rm]")) return;
+    lines.splice(+e.target.dataset.rm, 1); keep(); render(true);
+  });
+  $("addLine").addEventListener("click", () => {
+    const last = lines[lines.length - 1] || {};
+    lines.push({ prof: pricing ? pricing.profiles[0].id : "par", wood: last.wood || (pricing ? pricing.woods[0].id : "awo"), metres: 100 }); keep(); render(true);
+    const sel = $("pf" + (lines.length - 1)); if (sel) sel.focus();
+  });
+
+  let cardWood = null;
+  try { cardWood = localStorage.getItem("hwCardWood"); } catch (e) {}
+  $("cardWood").addEventListener("change", e => { cardWood = e.target.value; try { localStorage.setItem("hwCardWood", cardWood); } catch (er) {} render(false); });
+
+  function render(redraw = true) {
+    const ready = !!pricing;
+    if (redraw) drawLines();
+    document.querySelector(".why").hidden = !ready;
+    $("priceInc").hidden = $("chips").hidden = !ready;
+    $("copyCard").disabled = $("copyCharge").disabled = $("copyStock").disabled = !ready;
+    $("copyChargeMsg").textContent = "";
+    chargeEx = null; stockM3 = null;
+    if (!ready) { $("priceEx").textContent = "–"; $("stockM3").textContent = "–"; $("card").innerHTML = ""; $("runs").hidden = true; $("copyRuns").disabled = true; renderStatus(); return; }
+    // A row whose profile or hardwood an admin removed falls back to the first one.
+    lines.forEach(l => {
+      if (!pricing.profiles.some(p => p.id === l.prof)) l.prof = pricing.profiles[0].id;
+      if (!pricing.woods.some(w => w.id === l.wood)) l.wood = pricing.woods[0].id;
+    });
+
+    const j = job(pricing), last = tiers(pricing).at(-1);
+    chargeEx = j.needSize ? null : j.price;
+    stockM3 = j.unsized || j.m <= 0 ? null : j.rawM3;
+    $("copyCharge").disabled = j.needSize;
+    $("copyStock").disabled = stockM3 == null;
+    $("priceEx").textContent = j.needSize ? "–" : gbp(j.price, 0);
+    $("priceInc").textContent = j.needSize ? `Enter the size for runs over ${fmtM(last.from)} m`
+      : j.m > 0 ? `${gbp(j.price * (1 + VAT))} inc VAT · ${gbp(j.price / j.m)} a metre on average` : "Enter the metres to price the job";
+    $("stockM3").textContent = stockM3 == null ? "–" : `${m3(stockM3)} m³`;
+    $("stockSub").textContent = j.m <= 0 ? "Enter the metres" : j.unsized ? "Enter the thickness and width on every run" : `${fmtM(j.m)} m finished, with each hardwood's width allowance`;
+    const chips = [`<span class="chip">${fmtM(j.m)} m in ${j.runs} run${j.runs === 1 ? "" : "s"}</span>`];
+    if (j.newSet > 0) chips.push(`<span class="chip warn">Includes new cutters</span>`);
+    if (!j.needSize && j.m > 0 && j.price < j.cost) chips.push(`<span class="chip warn">Below what the job costs us</span>`);
+    $("chips").innerHTML = chips.join("");
+
+    runList = j.rows.map((r, i) => ({ r, i })).filter(x => x.r.m > 0);
+    $("copyRuns").disabled = j.needSize || !runList.length;
+    $("runs").hidden = !runList.length;
+    $("runs").innerHTML = runList.map(({ r, i }) =>
+      `<dt><b>Run ${i + 1}</b> · ${esc(runLabel(r, lines[i]))}<small>${tierName(r.t)}${r.t.kind === "off" ? `, ${r.t.off}% off` : r.t.kind === "setup" ? `, incl. ${gbp(pricing.setupFee, 0)} set-up` : `, ${pricing.timberPct}% of the raw stock cost`}${r.cutters ? ", new cutters" : ""}${r.sized ? ` · ${m3(r.rawM3)} m³ raw` : ""}</small></dt>` +
+      (r.needSize ? `<dd class="need">Needs the size</dd>` : `<dd>${gbp(r.price)}</dd>`)).join("") +
+      `<dt class="tot">Total ex VAT</dt><dd class="tot">${j.needSize ? "–" : gbp(j.price)}</dd>`;
+
+    j.rows.forEach((r, i) => {
+      const el = $("lo" + i); if (!el) return;
+      const l = lines[i];
+      const raw = r.sized ? `<b>${mm(l.thick)} × ${mm(l.width)} mm</b> cut from <b>${mm(l.thick)} × ${mm(r.rawW)} mm</b> raw (${r.w.wasteW}% on width)` : "Enter the finished thickness and width for the raw stock";
+      if (r.m <= 0) { el.innerHTML = raw; return; }
+      const what = r.t.kind === "setup" ? `${gbp(r.rate)} a metre + ${gbp(pricing.setupFee, 0)} set-up`
+        : r.t.kind === "off" ? `${r.t.off}% off, ${gbp(r.rate)} a metre`
+        : r.needSize ? `${pricing.timberPct}% of the raw stock cost: enter the size`
+        : `${pricing.timberPct}% of the raw stock cost, ${gbp(r.rate)} a metre`;
+      el.innerHTML = `<span>${raw}${r.sized ? ` · ${m3(r.rawM3)} m³` : ""}</span><span>${tierName(r.t)}: ${what}${r.cutters ? `, plus ${gbp(r.cutters, 0)} for new cutters` : ""}${r.needSize ? "" : ` · ${gbp(r.price)} for this run`}</span>`;
+    });
+
+    const parts = [
+      ["machine", "Time on the moulder", "Electric, mill team and yard team while it runs", j.machine],
+      ["setup", "Setting up", "Changing and setting the heads for each profile", j.setup],
+      ["cutters", "Cutter wear", "Share of a cutter set's life in this hardwood", j.wear],
+      ["newset", "New cutters", "A set made for this profile", j.newSet]
+    ].filter(p => p[3] > 0 || p[0] !== "newset");
+    $("cbar").innerHTML = parts.map(p => `<i style="width:${j.cost ? p[3] / j.cost * 100 : 0}%;background:var(--${p[0]})" title="${p[1]}"></i>`).join("");
+    $("breakdown").innerHTML = parts.map(p =>
+      `<dt><span class="sw" style="background:var(--${p[0]})"></span><span class="name">${p[1]}<small>${p[2]}</small></span></dt><dd>${gbp(p[3])}</dd>`).join("") +
+      `<dt><span></span><span class="name total">Cost of the milling</span></dt><dd class="total">${gbp(j.cost)}</dd>`;
+    $("explain").textContent = j.m <= 0 || j.needSize ? ""
+      : j.price < j.cost
+        ? `We charge ${gbp(j.price, 0)} for milling that costs us ${gbp(j.cost)} to run. The long-run reduction takes the charge below our cost, so the hardwood on this order needs to carry the difference.`
+        : `We charge ${gbp(j.price, 0)} for milling that costs us ${gbp(j.cost)} to run.`;
+
+    const cw = pricing.woods.find(w => w.id === cardWood) || pricing.woods.find(w => w.id === lines[0].wood) || pricing.woods[0];
+    $("cardWood").innerHTML = pricing.woods.map(w => `<option value="${esc(w.id)}"${w.id === cw.id ? " selected" : ""}>${esc(w.name)}</option>`).join("");
+    const T = tiers(pricing);
+    $("card").innerHTML = `<thead><tr><th>Profile in ${esc(cw.name.toLowerCase())}</th>${T.map(t => `<th>${tierName(t)}<br><small>${t.kind === "setup" ? `+ ${gbp(pricing.setupFee, 0)} set-up` : t.kind === "off" ? `${t.off}% off` : `${pricing.timberPct}% of raw stock cost`}</small></th>`).join("")}</tr></thead><tbody>` +
+      pricing.profiles.map(p => `<tr><td>${esc(p.name)}${p.newSet ? `<small class="muted"> · + ${gbp(p.newSet * pricing.markup, 0)} new cutters</small>` : ""}</td>${T.map(t => `<td class="${t.kind === "setup" ? "" : "strong"}">${cardCell(p, cw, t)}</td>`).join("")}</tr>`).join("") + `</tbody>`;
+    renderStatus();
+  }
+  let runList = [];
+  const runLabel = (r, l) => `${r.p.name.split(" (")[0]}, ${r.w.name}${r.sized ? ` ${mm(l.thick)} × ${mm(l.width)} mm` : ""}, ${fmtM(r.m)} m`;
+  function cardCell(p, w, t) {
+    if (t.kind === "timber") return `${pricing.timberPct}% of raw stock`;
+    return gbp(fullRate(p, w, pricing) * (1 - t.off / 100));
+  }
+
+  function renderStatus() {
+    const st = $("status"), when = updatedAt ? new Date(updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null;
+    st.classList.toggle("stale", state !== "live" || dirty);
+    const text = state === "loading" ? "Loading current rates…"
+      : state === "offline" ? "Rates can't load here. Open this page signed in to claude.ai."
+      : state === "empty" ? "No rates set yet. An admin needs to save them."
+      : dirty ? "Previewing unsaved changes"
+      : `Current rates${when ? `, set ${when}` : ""}`;
+    st.innerHTML = `<span class="dot"></span>` + esc(text);
+  }
+
+  $("copyCard").addEventListener("click", () => {
+    if (!pricing) return;
+    const T = tiers(pricing), cw = pricing.woods.find(w => w.id === $("cardWood").value) || pricing.woods[0];
+    const out = [`Nicks Timber hardwood milling rates, ${cw.name}, £ per metre ex VAT (up to ${pricing.setupUpTo} m also pays ${gbp(pricing.setupFee, 0)} set-up)`,
+      ["Profile", ...T.map(t => `${tierName(t)}${t.kind === "off" ? ` (${t.off}% off)` : ""}`)].join("\t")];
+    pricing.profiles.forEach(p => out.push([p.name, ...T.map(t => cardCell(p, cw, t))].join("\t")));
+    copyText(out.join("\n"), $("copyMsg"), "Copy blocked here. Select the table to copy it.");
+  });
+  $("copyRuns").addEventListener("click", () => {
+    if (chargeEx == null || !runList.length) return;
+    const out = runList.map(({ r, i }) => `Run ${i + 1}: ${runLabel(r, lines[i])}${r.sized ? `, ${m3(r.rawM3)} m³ raw` : ""}\t${r.price.toFixed(2)}`);
+    out.push(`Total ex VAT\t${chargeEx.toFixed(2)}`);
+    if (stockM3 != null) out.push(`Raw stock m³\t${m3(stockM3)}`);
+    copyText(out.join("\n"), $("copyChargeMsg"), "Copy blocked here. Select the runs to copy them.");
+  });
+  $("copyCharge").addEventListener("click", () => {
+    if (chargeEx == null) return;
+    copyText(chargeEx.toFixed(2), $("copyChargeMsg"), `Copy blocked here. The charge is ${chargeEx.toFixed(2)} ex VAT.`);
+  });
+  $("copyStock").addEventListener("click", () => {
+    if (stockM3 == null) return;
+    copyText(m3(stockM3), $("copyChargeMsg"), `Copy blocked here. The raw stock is ${m3(stockM3)} m³.`);
+  });
+  function copyText(text, msg, blocked) {
+    const done = ok => { msg.textContent = ok ? `Copied ${text.includes("\n") ? "" : text}`.trim() : blocked; };
+    const fallback = () => {
+      const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove(); done(ok);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+    else fallback();
+  }
+
+  // ---- Admin panel: Editors only. The db rules also refuse anyone below Editor reading or writing admin/rates.
+  const KEYS = ["daysMonth", "hoursDay", "utilisation", "feedEff", "cutterSet", "margin", "roundTo", ...PRICE_KEYS];
+  const del = `<td><button type="button" class="ghost small" data-del>Remove</button></td>`;
+  function woodRow(w) {
+    return `<tr data-id="${esc(w.id)}"><td><input data-w="name" type="text" value="${esc(w.name)}" aria-label="Hardwood" style="min-width:14em"></td>` +
+      `<td><input data-w="price" type="number" min="0" step="10" value="${w.price ?? ""}" aria-label="Cost price £ per m³"></td>` +
+      `<td><input data-w="wasteW" type="number" min="0" max="200" step="1" value="${w.wasteW ?? ""}" aria-label="Width waste %"></td>` +
+      `<td><input data-w="speed" type="number" min="5" max="200" step="5" value="${w.speed ?? 100}" aria-label="Feed speed % of softwood"></td>` +
+      `<td><input data-w="life" type="number" min="5" max="200" step="5" value="${w.life ?? 100}" aria-label="Cutter life % of softwood"></td>${del}</tr>`;
+  }
+  function bandRow(b) {
+    return `<tr><td><input data-b="to" type="number" min="1" step="10" value="${b[0] ?? ""}" aria-label="Up to metres"></td>` +
+      `<td><input data-b="off" type="number" min="0" max="100" step="5" value="${b[1] ?? ""}" aria-label="% off"></td>${del}</tr>`;
+  }
+  function costRow(c) {
+    return `<tr><td><input data-c="name" type="text" value="${esc(c.name || "")}" aria-label="Cost"></td>` +
+      `<td><input data-c="month" type="number" min="0" step="100" value="${c.month ?? ""}" aria-label="£ per month"></td>` +
+      `<td><input data-c="share" type="number" min="0" max="100" step="5" value="${c.share ?? 100}" aria-label="% to the mill"></td>${del}</tr>`;
+  }
+  function profRow(p) {
+    return `<tr data-id="${esc(p.id)}"><td><input data-p="name" type="text" value="${esc(p.name)}" aria-label="Profile name" style="min-width:16em"></td>` +
+      `<td><input data-p="feed" type="number" min="0.5" step="0.5" value="${p.feed}" aria-label="Feed speed m/min"></td>` +
+      `<td><input data-p="setupMins" type="number" min="0" step="5" value="${p.setupMins}" aria-label="Set-up minutes"></td>` +
+      `<td><input data-p="cutterM" type="number" min="1" step="100" value="${p.cutterM}" aria-label="Cutter life metres"></td>` +
+      `<td style="text-align:center"><input data-p="newSet" type="checkbox"${p.newSet ? " checked" : ""} aria-label="New set each job"></td>${del}</tr>`;
+  }
+  function fillAdmin(r) {
+    KEYS.forEach(k => { $("a-" + k).value = r[k] ?? DEFAULTS[k] ?? ""; });
+    $("woodTable").innerHTML = `<thead><tr><th>Hardwood</th><th>Cost £/m³</th><th>Width waste %</th><th>Feed speed %</th><th>Cutter life %</th><th></th></tr></thead><tbody>${(r.woods || DEFAULTS.woods).map(woodRow).join("")}</tbody>`;
+    $("bandTable").innerHTML = `<thead><tr><th>Runs up to (m)</th><th>% off the full rate</th><th></th></tr></thead><tbody>${(r.bands || DEFAULTS.bands).map(bandRow).join("")}</tbody>`;
+    $("costTable").innerHTML = `<thead><tr><th>Cost</th><th>£ per month</th><th>% to the mill</th><th></th></tr></thead><tbody>${r.costs.map(costRow).join("")}</tbody>`;
+    $("profTable").innerHTML = `<thead><tr><th>Profile</th><th>Feed m/min</th><th>Set-up mins</th><th>Cutter life m</th><th>New set</th><th></th></tr></thead><tbody>${r.profiles.map(profRow).join("")}</tbody>`;
+    readout(r);
+  }
+  function readAdmin() {
+    const r = {};
+    KEYS.forEach(k => { const v = parseFloat($("a-" + k).value); r[k] = isFinite(v) ? v : (saved && saved[k]) ?? DEFAULTS[k]; });
+    r.woods = [...$("woodTable").querySelectorAll("tbody tr")].map(tr => {
+      const v = k => parseFloat(tr.querySelector(`[data-w="${k}"]`).value);
+      return {
+        id: tr.dataset.id, name: tr.querySelector('[data-w="name"]').value.trim() || "Hardwood",
+        price: v("price") >= 0 ? v("price") : 0, wasteW: v("wasteW") >= 0 ? v("wasteW") : 0,
+        speed: v("speed") > 0 ? v("speed") : 100, life: v("life") > 0 ? v("life") : 100
+      };
+    });
+    if (!r.woods.length) r.woods = DEFAULTS.woods;
+    r.bands = [...$("bandTable").querySelectorAll("tbody tr")].map(tr => [
+      parseFloat(tr.querySelector('[data-b="to"]').value), Math.min(Math.max(parseFloat(tr.querySelector('[data-b="off"]').value) || 0, 0), 100)
+    ]).filter(b => b[0] > 0).sort((a, b) => a[0] - b[0]);
+    r.costs = [...$("costTable").querySelectorAll("tbody tr")].map(tr => ({
+      name: tr.querySelector('[data-c="name"]').value.trim() || "Cost",
+      month: parseFloat(tr.querySelector('[data-c="month"]').value) || 0,
+      share: Math.min(Math.max(parseFloat(tr.querySelector('[data-c="share"]').value) || 0, 0), 100)
+    }));
+    r.profiles = [...$("profTable").querySelectorAll("tbody tr")].map(tr => {
+      const v = k => parseFloat(tr.querySelector(`[data-p="${k}"]`).value);
+      return {
+        id: tr.dataset.id, name: tr.querySelector('[data-p="name"]').value.trim() || "Profile",
+        feed: v("feed") > 0 ? v("feed") : 10, setupMins: v("setupMins") >= 0 ? v("setupMins") : 30,
+        cutterM: v("cutterM") > 0 ? v("cutterM") : 3000, newSet: tr.querySelector('[data-p="newSet"]').checked
+      };
+    });
+    if (!r.profiles.length) r.profiles = DEFAULTS.profiles;
+    return r;
+  }
+  function readout(r) {
+    const h = hourRate(r);
+    $("readout").innerHTML = `<span>Mill running costs<b>${gbp(h.month, 0)}</b>a month</span><span>Hours on jobs<b>${h.hours.toFixed(0)}</b>a month</span><span>Mill cost<b>${gbp(h.rate)}</b>an hour (${gbp(h.rate / 60)} a minute)</span>`;
+  }
+  const newId = () => "x" + Date.now().toString(36);
+  $("addWood").addEventListener("click", () => {
+    $("woodTable").querySelector("tbody").insertAdjacentHTML("beforeend", woodRow({ id: newId(), name: "New hardwood", price: 0, wasteW: 25, speed: 70, life: 60 }));
+    $("adminForm").dispatchEvent(new Event("input"));
+  });
+  $("addCost").addEventListener("click", () => { $("costTable").querySelector("tbody").insertAdjacentHTML("beforeend", costRow({ name: "", month: 0, share: 100 })); });
+  $("addBand").addEventListener("click", () => { $("bandTable").querySelector("tbody").insertAdjacentHTML("beforeend", bandRow([])); });
+  $("addProf").addEventListener("click", () => {
+    $("profTable").querySelector("tbody").insertAdjacentHTML("beforeend", profRow({ id: newId(), name: "New profile", feed: 8, setupMins: 30, cutterM: 3000, newSet: false }));
+    $("adminForm").dispatchEvent(new Event("input"));
+  });
+  $("adminForm").addEventListener("click", e => {
+    if (!e.target.matches("[data-del]")) return;
+    const body = e.target.closest("tbody");
+    if (body.children.length > 1) { e.target.closest("tr").remove(); $("adminForm").dispatchEvent(new Event("input")); }
+  });
+  function setDirty(d) { dirty = d; $("saveRates").disabled = !d || !db; $("resetRates").disabled = !d; }
+  $("adminForm").addEventListener("input", () => {
+    const r = readAdmin(); readout(r);
+    pricing = toPricing(r); setDirty(true);
+    $("adminMsg").textContent = db ? "Not saved yet. The quote above shows your changes." : "Preview only: the shared database isn't available here, so this can't be saved.";
+    render();
+  });
+  $("resetRates").addEventListener("click", () => {
+    pricing = published; fillAdmin(saved || DEFAULTS); setDirty(false); $("adminMsg").textContent = "Changes discarded.";
+    render();
+  });
+  $("adminForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db || !dirty) return;
+    const next = readAdmin(), at = new Date().toISOString();
+    $("saveRates").disabled = true; $("adminMsg").textContent = "Saving…";
+    try {
+      await db.doc("admin/rates").set({ ...next, updatedAt: at });
+      await db.doc("public/pricing").set({ ...toPricing(next), updatedAt: at });
+      saved = next; setDirty(false);
+      $("adminMsg").textContent = "Saved. Staff signed in to claude.ai see the new rates now. Ask Claude to sync the public link copy.";
+    } catch (err) {
+      $("saveRates").disabled = false;
+      $("adminMsg").textContent = "Not saved. Only Editors of this page can change the rates; if you are one, try again.";
+    }
+  });
+
+  render();
+
+  // Rates for people without a claude.ai login ship with the page: the combined amounts only.
+  function applyPublished(p, when) {
+    published = p; updatedAt = when || null; state = "live";
+    if (!dirty) pricing = p;
+  }
+  const fileLoad = fetch("pricing.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(f => {
+    if (f && f.profiles && f.woods && state !== "live") { const { updatedAt: when, ...p } = f; applyPublished(p, when); render(); }
+  }).catch(() => {});
+
+  const use = name => window.claude && window.claude.use ? window.claude.use(name) : null;
+  (async () => {
+    const [dbNs, user] = await Promise.all([use("db"), use("user")]);
+    db = dbNs;
+    isAdmin = user ? await user.canEdit() : false;
+    if (!db) { await fileLoad; if (state !== "live") { state = "offline"; render(); } return; }
+    if (isAdmin) {
+      $("role").textContent = "Admin"; $("role").classList.add("admin");
+      try {
+        const a = await db.doc("admin/rates").get();
+        if (a.exists) { const { updatedAt: _, ...r } = a.data(); saved = r; }
+      } catch (e) { $("adminMsg").textContent = "Couldn't load the saved figures. Reload the page before saving."; }
+      fillAdmin(saved || DEFAULTS);
+      $("admin").hidden = false; setDirty(false);
+      if (!saved) { $("adminMsg").textContent = "These are starting figures. Check them and save to set the rates for everyone."; $("saveRates").disabled = false; dirty = true; }
+    }
+    db.doc("public/pricing").onSnapshot(snap => {
+      if (snap.exists) { const { updatedAt: when, ...p } = snap.data(); applyPublished(p, when); }
+      else if (!published) state = "empty";
+      render();
+    }, () => { if (!pricing) state = "offline"; renderStatus(); });
+  })();
+})();
+</script>
