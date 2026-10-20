@@ -101,9 +101,9 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
 <div class="wrap">
   <header>
     <div>
-      <div class="eyebrow">Nick's Timber · sawmill costing</div>
+      <div class="eyebrow">Nick's Timber · milling costs</div>
       <h1>Mill Job Estimator</h1>
-      <p class="sub">Pick a timber, enter the log volume and get the running cost and a selling price. Wages, electric, fuel, blades, machine wear and yard overheads all come from the settings at the bottom, so set those once with your real figures.</p>
+      <p class="sub">Pick a timber, enter the length and section you're running and get the cost and a selling price for milling it from sawn boards. Wages, electric, fuel, cutters, machine wear and overheads all come from the settings at the bottom, so set those once with your real figures.</p>
     </div>
     <div class="row">
       <button class="btn small" id="copyQuote" type="button">Copy quote summary</button>
@@ -119,10 +119,16 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
         <label class="f" style="grid-column: 1 / -1">Timber
           <select id="job-material"></select>
         </label>
-        <label class="f">Log volume in <span class="u">m³ (round logs)</span>
-          <input type="number" id="job-logVol" min="0" step="0.1">
+        <label class="f">Finished length <span class="u">linear metres to supply</span>
+          <input type="number" id="job-lm" min="0" step="10">
         </label>
-        <label class="f">Extra handling time <span class="u">hours (loading, awkward logs)</span>
+        <label class="f">Sawn board thickness <span class="u">mm</span>
+          <input type="number" id="job-thick" min="0" step="1">
+        </label>
+        <label class="f">Sawn board width <span class="u">mm</span>
+          <input type="number" id="job-width" min="0" step="1">
+        </label>
+        <label class="f">Extra handling time <span class="u">hours (sorting, cross-cutting, packing)</span>
           <input type="number" id="job-extraHours" min="0" step="0.25">
         </label>
         <label class="f">Delivery distance <span class="u">miles (return trip)</span>
@@ -130,13 +136,12 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
         </label>
       </div>
       <div class="row">
-        <span class="eyebrow">Whose logs?</span>
-        <div class="seg" role="group" aria-label="Whose logs">
+        <span class="eyebrow">Whose boards?</span>
+        <div class="seg" role="group" aria-label="Whose boards">
+          <button type="button" id="mode-own" data-mode="own">Ours (include timber cost)</button>
           <button type="button" id="mode-service" data-mode="service">Customer's (milling only)</button>
-          <button type="button" id="mode-own" data-mode="own">Ours (include log cost)</button>
         </div>
       </div>
-      <label class="check"><input type="checkbox" id="job-kiln"> Kiln dry the sawn timber</label>
       <div>
         <div class="eyebrow" style="margin-bottom:6px">Crew on this job</div>
         <div class="row" id="job-crew"></div>
@@ -166,11 +171,11 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
   <section class="panel" aria-labelledby="rcH">
     <div>
       <h2 id="rcH">Same job, every timber</h2>
-      <p class="sub">The current job's log volume, crew and options run through each timber, so you can see which ones cost more to cut and what to charge for them.</p>
+      <p class="sub">The current job's length, section, crew and options run through each timber, so you can see which ones cost more to machine and what to charge for them.</p>
     </div>
     <div class="tablewrap">
       <table id="rateCard">
-        <thead><tr><th>Timber</th><th class="r">Mill hours</th><th class="r">Sawn m³</th><th class="r">Cost / mill hr</th><th class="r">Cost / sawn m³</th><th class="r">Sell / sawn m³</th><th class="r">Sell / ft³</th><th class="r">Job price</th></tr></thead>
+        <thead><tr><th>Timber</th><th class="r">Machine hrs</th><th class="r">Boards m³</th><th class="r">Milling cost / hr</th><th class="r">Cost / lm</th><th class="r">Sell / lm</th><th class="r">Sell / m³</th><th class="r">Job price</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -199,11 +204,11 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
       <summary>Electric &amp; fuel</summary>
       <div>
         <div class="fields">
-          <label class="f">Mill motor <span class="u">kW</span><input type="number" id="s-millKw" step="0.5" min="0"></label>
-          <label class="f">Average motor load <span class="u">% of full power while cutting</span><input type="number" id="s-load" step="5" min="0" max="100"></label>
-          <label class="f">Other electric kit <span class="u">kW (hydraulics, extraction, lights)</span><input type="number" id="s-auxKw" step="0.5" min="0"></label>
+          <label class="f">Machine motors <span class="u">kW, all heads and feed added up</span><input type="number" id="s-millKw" step="0.5" min="0"></label>
+          <label class="f">Average motor load <span class="u">% of full power while running</span><input type="number" id="s-load" step="5" min="0" max="100"></label>
+          <label class="f">Other electric kit <span class="u">kW (dust extraction, compressor, lights)</span><input type="number" id="s-auxKw" step="0.5" min="0"></label>
           <label class="f">Electricity price <span class="u">pence per kWh</span><input type="number" id="s-pence" step="0.5" min="0"></label>
-          <label class="f">Diesel used <span class="u">litres per mill hour (loader, mill engine)</span><input type="number" id="s-litres" step="0.1" min="0"></label>
+          <label class="f">Diesel used <span class="u">litres per machine hour (forklift)</span><input type="number" id="s-litres" step="0.1" min="0"></label>
           <label class="f">Diesel price <span class="u">£ per litre</span><input type="number" id="s-fuelPrice" step="0.01" min="0"></label>
         </div>
         <div class="derived" id="powerDerived"></div>
@@ -211,15 +216,15 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     </details>
 
     <details class="settings" open>
-      <summary>Blades</summary>
+      <summary>Cutters &amp; tooling</summary>
       <div>
         <div class="fields">
-          <label class="f">New blade <span class="u">£ each</span><input type="number" id="s-bladePrice" step="0.5" min="0"></label>
-          <label class="f">Resharpen &amp; set <span class="u">£ each time</span><input type="number" id="s-sharpenCost" step="0.5" min="0"></label>
-          <label class="f">Sharpens per blade <span class="u">before it's scrapped</span><input type="number" id="s-sharpens" step="1" min="1"></label>
-          <label class="f">Allowance for metal &amp; breakdowns <span class="u">% added to the job cost</span><input type="number" id="s-contingency" step="1" min="0"></label>
+          <label class="f">New set of knives / cutters <span class="u">£</span><input type="number" id="s-bladePrice" step="0.5" min="0"></label>
+          <label class="f">Resharpen <span class="u">£ each time</span><input type="number" id="s-sharpenCost" step="0.5" min="0"></label>
+          <label class="f">Sharpens per set <span class="u">before they're scrapped</span><input type="number" id="s-sharpens" step="1" min="1"></label>
+          <label class="f">Allowance for breakdowns &amp; rejects <span class="u">% added to the job cost</span><input type="number" id="s-contingency" step="1" min="0"></label>
         </div>
-        <p class="note">How long a blade cuts between sharpens depends on the timber, so that figure lives in the timber table below.</p>
+        <p class="note">How long cutters run between sharpens depends on the timber, so that figure lives in the timber table below.</p>
       </div>
     </details>
 
@@ -227,13 +232,13 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
       <summary>Machinery &amp; yard overheads</summary>
       <div>
         <div class="fields">
-          <label class="f">Mill cost <span class="u">£ purchase price</span><input type="number" id="s-millPrice" step="500" min="0"></label>
+          <label class="f">Machine cost <span class="u">£ purchase price (moulder / planer)</span><input type="number" id="s-millPrice" step="500" min="0"></label>
           <label class="f">Value when sold on <span class="u">£</span><input type="number" id="s-residual" step="500" min="0"></label>
           <label class="f">Years you'll keep it<input type="number" id="s-years" step="1" min="1"></label>
-          <label class="f">Mill hours per year <span class="u">hours you actually cut</span><input type="number" id="s-hours" step="50" min="1"></label>
+          <label class="f">Machine hours per year <span class="u">hours it actually runs on jobs</span><input type="number" id="s-hours" step="50" min="1"></label>
         </div>
         <div class="tablewrap"><table class="edit" id="ohTable">
-          <thead><tr><th>Yearly cost</th><th>£ per year</th><th>Per mill hr</th><th></th></tr></thead><tbody></tbody>
+          <thead><tr><th>Yearly cost</th><th>£ per year</th><th>Per machine hr</th><th></th></tr></thead><tbody></tbody>
         </table></div>
         <div class="row"><button class="btn small" type="button" id="addOh">Add cost</button></div>
         <div class="derived" id="ohDerived"></div>
@@ -243,9 +248,9 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     <details class="settings" open>
       <summary>Timbers</summary>
       <div>
-        <p class="note">Cutting rate is cubic metres of log the mill gets through per hour of sawing. Yield is the share of the log volume that comes out as sawn timber. Time your own runs and update these, as they make the biggest difference to the price.</p>
+        <p class="note">Feed speed is the metres per minute the machine is set to for that timber. Waste is the share of board length lost to cross-cutting out defects and rejects. Time a few real runs and update these, as they make the biggest difference to the price.</p>
         <div class="tablewrap"><table class="edit" id="matTable">
-          <thead><tr><th>Timber</th><th>Cutting rate m³/hr</th><th>Yield %</th><th>Blade hrs per sharpen</th><th>Set-up hrs per job</th><th>Log price £/m³</th><th></th></tr></thead><tbody></tbody>
+          <thead><tr><th>Timber</th><th>Feed speed m/min</th><th>Waste %</th><th>Cutter hrs per sharpen</th><th>Set-up hrs per job</th><th>Sawn price £/m³</th><th></th></tr></thead><tbody></tbody>
         </table></div>
         <div class="row"><button class="btn small" type="button" id="addMat">Add timber</button></div>
       </div>
@@ -255,8 +260,8 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
       <summary>Extras &amp; pricing</summary>
       <div>
         <div class="fields">
-          <label class="f">Consumables <span class="u">£ per sawn m³ (stickers, sealer, strapping)</span><input type="number" id="s-consumables" step="0.5" min="0"></label>
-          <label class="f">Kiln drying <span class="u">£ per sawn m³</span><input type="number" id="s-kiln" step="1" min="0"></label>
+          <label class="f">Feed efficiency <span class="u">% of the time timber is actually going through</span><input type="number" id="s-efficiency" step="5" min="1" max="100"></label>
+          <label class="f">Consumables <span class="u">£ per m³ (wrap, strapping, end sealer)</span><input type="number" id="s-consumables" step="0.5" min="0"></label>
           <label class="f">Delivery <span class="u">£ per mile</span><input type="number" id="s-perMile" step="0.05" min="0"></label>
           <label class="f">Profit margin <span class="u">% of the selling price</span><input type="number" id="s-margin" step="1" min="0" max="95"></label>
           <label class="f">Minimum job charge <span class="u">£ ex VAT</span><input type="number" id="s-minCharge" step="5" min="0"></label>
@@ -285,8 +290,7 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
 <script>
 (function () {
   "use strict";
-  const KEY = "nicks-timber-mill-estimator-v1";
-  const FT3_PER_M3 = 35.3147;
+  const KEY = "nicks-timber-mill-estimator-v2";
 
   // Example figures (UK, 2026). Replace with real ones in Settings.
   const DEFAULTS = {
@@ -295,31 +299,29 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
       { name: "Tailer / labourer", rate: 12.75, on: true }
     ],
     oncost: 20,
-    millKw: 15, load: 65, auxKw: 2, pence: 26,
-    litres: 1.5, fuelPrice: 1.45,
-    bladePrice: 28, sharpenCost: 7, sharpens: 6, contingency: 5,
-    millPrice: 45000, residual: 12000, years: 10, hours: 1200,
+    millKw: 30, load: 50, auxKw: 7.5, pence: 26,
+    litres: 0.5, fuelPrice: 1.45,
+    bladePrice: 240, sharpenCost: 45, sharpens: 8, contingency: 5,
+    millPrice: 60000, residual: 15000, years: 10, hours: 1500,
     overheads: [
-      { name: "Yard rent", amount: 6000 },
+      { name: "Workshop rent", amount: 6000 },
       { name: "Insurance", amount: 2400 },
       { name: "Business rates", amount: 1500 },
-      { name: "Mill servicing & repairs", amount: 2500 },
-      { name: "Loader / telehandler (finance & upkeep)", amount: 4000 },
+      { name: "Machine servicing & repairs", amount: 3000 },
+      { name: "Forklift (finance & upkeep)", amount: 3000 },
       { name: "Van, phone, accounts, admin", amount: 3500 }
     ],
     materials: [
-      { name: "Larch", rate: 1.0, yield: 55, sharpen: 4, setup: 0.5, logPrice: 75 },
-      { name: "Douglas fir", rate: 1.1, yield: 55, sharpen: 4, setup: 0.5, logPrice: 80 },
-      { name: "Western red cedar", rate: 1.2, yield: 55, sharpen: 5, setup: 0.5, logPrice: 110 },
-      { name: "Oak", rate: 0.55, yield: 48, sharpen: 2, setup: 0.75, logPrice: 160 },
-      { name: "Sweet chestnut", rate: 0.65, yield: 50, sharpen: 2.5, setup: 0.75, logPrice: 110 },
-      { name: "Ash / beech / sycamore", rate: 0.7, yield: 50, sharpen: 3, setup: 0.75, logPrice: 85 },
-      { name: "Elm", rate: 0.5, yield: 50, sharpen: 2, setup: 1, logPrice: 120 },
-      { name: "Walnut / fruitwood", rate: 0.35, yield: 42, sharpen: 2.5, setup: 1, logPrice: 300 }
+      { name: "Redwood, joinery grade", feed: 10, waste: 15, sharpen: 8, setup: 0.75, price: 650 },
+      { name: "Redwood, clear / selected", feed: 10, waste: 8, sharpen: 8, setup: 0.75, price: 1100 },
+      { name: "Whitewood / spruce", feed: 12, waste: 15, sharpen: 8, setup: 0.75, price: 500 },
+      { name: "Siberian larch", feed: 8, waste: 18, sharpen: 5, setup: 0.75, price: 900 },
+      { name: "European oak", feed: 5, waste: 20, sharpen: 3, setup: 1, price: 2200 },
+      { name: "Sapele", feed: 6, waste: 12, sharpen: 3, setup: 1, price: 1600 }
     ],
-    consumables: 6, kiln: 70, perMile: 1.1,
+    efficiency: 70, consumables: 6, perMile: 1.1,
     margin: 30, minCharge: 150, vat: 20,
-    job: { material: 3, logVol: 3, extraHours: 0.5, miles: 0, mode: "service", kiln: false }
+    job: { material: 0, lm: 600, thick: 50, width: 150, extraHours: 0.5, miles: 0, mode: "own" }
   };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -356,39 +358,44 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
 
   function estimate(s, m, job) {
     const r = hourlyRates(s, job);
-    const logVol = Math.max(0, n(job.logVol));
-    const sawHrs = n(m.rate) > 0 ? logVol / n(m.rate) : 0;
+    const lm = Math.max(0, n(job.lm));
+    const waste = Math.min(90, Math.max(0, n(m.waste)));
+    const boardLm = lm / (1 - waste / 100);
+    const boardM3 = boardLm * n(job.thick) * n(job.width) / 1e6;
+    const metresPerHr = n(m.feed) * 60 * Math.min(100, Math.max(1, n(s.efficiency))) / 100;
+    const runHrs = metresPerHr > 0 ? boardLm / metresPerHr : 0;
     const setupHrs = n(m.setup) + n(job.extraHours);
-    const totalHrs = sawHrs + setupHrs;
-    const sawn = logVol * n(m.yield) / 100;
-    const bladePerHr = n(m.sharpen) > 0
+    const totalHrs = runHrs + setupHrs;
+    const cutterPerHr = n(m.sharpen) > 0
       ? (n(s.bladePrice) / Math.max(1, n(s.sharpens)) + n(s.sharpenCost)) / n(m.sharpen) : 0;
 
-    const lines = [
+    const lines = [];
+    if (job.mode === "own") lines.push({ key: "timber", label: "Sawn boards", how: `${fix(boardLm, 0)} lm (${fix(waste, 0)}% waste) = ${fix(boardM3, 3)} m³ × ${money(n(m.price))}`, v: boardM3 * n(m.price) });
+    lines.push(
       { key: "labour", label: "Wages", how: `${fix(totalHrs, 2)} hrs × ${money(r.labour)}/hr crew (incl. on-costs)`, v: totalHrs * r.labour },
-      { key: "electric", label: "Electric", how: `${fix(sawHrs, 2)} hrs sawing × ${fix(r.kwh, 1)} kW × ${fix(n(s.pence), 1)}p`, v: sawHrs * r.electric },
-      { key: "fuel", label: "Diesel", how: `${fix(sawHrs * n(s.litres), 1)} L × ${money(n(s.fuelPrice))}`, v: sawHrs * r.fuel },
-      { key: "blades", label: "Blades & sharpening", how: `${fix(sawHrs, 2)} hrs × ${money(bladePerHr)}/hr in ${esc(m.name.toLowerCase())}`, v: sawHrs * bladePerHr },
-      { key: "machine", label: "Mill wear (depreciation)", how: `${fix(totalHrs, 2)} hrs × ${money(r.depreciation)}/hr`, v: totalHrs * r.depreciation },
-      { key: "overheads", label: "Yard overheads", how: `${fix(totalHrs, 2)} hrs × ${money(r.overheads)}/hr`, v: totalHrs * r.overheads },
-      { key: "consumables", label: "Consumables", how: `${fix(sawn, 2)} sawn m³ × ${money(n(s.consumables))}`, v: sawn * n(s.consumables) }
-    ];
-    if (job.kiln) lines.push({ key: "kiln", label: "Kiln drying", how: `${fix(sawn, 2)} sawn m³ × ${money(n(s.kiln))}`, v: sawn * n(s.kiln) });
-    if (job.mode === "own") lines.push({ key: "logs", label: "Logs", how: `${fix(logVol, 2)} m³ × ${money(n(m.logPrice))}`, v: logVol * n(m.logPrice) });
+      { key: "electric", label: "Electric", how: `${fix(runHrs, 2)} hrs running × ${fix(r.kwh, 1)} kW × ${fix(n(s.pence), 1)}p`, v: runHrs * r.electric },
+      { key: "fuel", label: "Diesel", how: `${fix(runHrs * n(s.litres), 1)} L × ${money(n(s.fuelPrice))}`, v: runHrs * r.fuel },
+      { key: "cutters", label: "Cutters & sharpening", how: `${fix(runHrs, 2)} hrs × ${money(cutterPerHr)}/hr in ${esc(m.name.toLowerCase())}`, v: runHrs * cutterPerHr },
+      { key: "machine", label: "Machine wear", how: `${fix(totalHrs, 2)} hrs × ${money(r.depreciation)}/hr`, v: totalHrs * r.depreciation },
+      { key: "overheads", label: "Overheads", how: `${fix(totalHrs, 2)} hrs × ${money(r.overheads)}/hr`, v: totalHrs * r.overheads },
+      { key: "consumables", label: "Consumables", how: `${fix(boardM3, 3)} m³ × ${money(n(s.consumables))}`, v: boardM3 * n(s.consumables) }
+    );
     if (n(job.miles) > 0) lines.push({ key: "delivery", label: "Delivery", how: `${fix(n(job.miles), 0)} miles × ${money(n(s.perMile))}`, v: n(job.miles) * n(s.perMile) });
 
-    const sub = lines.reduce((t, l) => t + l.v, 0);
+    const timber = lines.filter((l) => l.key === "timber").reduce((t, l) => t + l.v, 0);
+    const sub = lines.reduce((t, l) => t + l.v, 0) - timber;
     const contingency = sub * n(s.contingency) / 100;
-    if (contingency > 0) lines.push({ key: "contingency", label: "Metal & breakdown allowance", how: `${fix(n(s.contingency), 0)}% of the above`, v: contingency });
-    const cost = sub + contingency;
+    if (contingency > 0) lines.push({ key: "contingency", label: "Breakdowns & rejects allowance", how: `${fix(n(s.contingency), 0)}% of the milling costs`, v: contingency });
+    const milling = sub + contingency;
+    const cost = milling + timber;
 
     const margin = Math.min(95, Math.max(0, n(s.margin)));
     const marginPrice = cost / (1 - margin / 100);
     const price = Math.max(marginPrice, n(s.minCharge));
     const vat = price * n(s.vat) / 100;
     return {
-      lines, cost, price, vat, priceInc: price + vat, profit: price - cost,
-      minApplied: price > marginPrice, sawHrs, setupHrs, totalHrs, sawn, logVol, r, bladePerHr
+      lines, cost, milling, timber, price, vat, priceInc: price + vat, profit: price - cost,
+      minApplied: price > marginPrice, runHrs, setupHrs, totalHrs, lm, boardLm, boardM3, metresPerHr, r
     };
   }
 
@@ -423,15 +430,16 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     $("ohTable").tBodies[0].innerHTML = S.overheads.map((o, i) =>
       editRow("overheads", i, [["name", "text"], ["amount", "number", 50]], `<td class="num">${money(n(o.amount) / hrs)}</td>`)).join("");
     $("matTable").tBodies[0].innerHTML = S.materials.map((m, i) =>
-      editRow("materials", i, [["name", "text"], ["rate", "number", 0.05], ["yield", "number", 1], ["sharpen", "number", 0.5], ["setup", "number", 0.25], ["logPrice", "number", 5]])).join("");
+      editRow("materials", i, [["name", "text"], ["feed", "number", 0.5], ["waste", "number", 1], ["sharpen", "number", 0.5], ["setup", "number", 0.25], ["price", "number", 10]])).join("");
   }
 
   function fillScalarInputs() {
     document.querySelectorAll("input[id^='s-']").forEach((el) => { el.value = S[el.id.slice(2)]; });
-    $("job-logVol").value = S.job.logVol;
+    $("job-lm").value = S.job.lm;
+    $("job-thick").value = S.job.thick;
+    $("job-width").value = S.job.width;
     $("job-extraHours").value = S.job.extraHours;
     $("job-miles").value = S.job.miles;
-    $("job-kiln").checked = !!S.job.kiln;
   }
 
   function recalc() {
@@ -441,11 +449,11 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === S.job.mode)));
 
     $("jobDerived").innerHTML =
-      `About <b>${fix(e.sawHrs, 1)} hrs</b> sawing + <b>${fix(e.setupHrs, 2)} hrs</b> set-up and handling = <b>${fix(e.totalHrs, 1)} mill hours</b>. ` +
-      `Expect roughly <b>${fix(e.sawn, 2)} m³</b> sawn (${fix(e.sawn * FT3_PER_M3, 0)} ft³) at ${fix(n(m.yield), 0)}% yield.`;
+      `You'll need about <b>${fix(e.boardLm, 0)} lm</b> of sawn board (<b>${fix(e.boardM3, 3)} m³</b>) to allow for ${fix(n(m.waste), 0)}% waste. ` +
+      `At ${fix(n(m.feed), 1)} m/min and ${fix(n(S.efficiency), 0)}% feed efficiency that's <b>${fix(e.runHrs, 1)} hrs</b> running + <b>${fix(e.setupHrs, 2)} hrs</b> set-up and handling = <b>${fix(e.totalHrs, 1)} machine hours</b>.`;
 
     $("headline").innerHTML =
-      `<div><small>Our cost</small><span class="big">${money(e.cost)}</span><small>${money(e.cost / Math.max(e.totalHrs, 0.01))} per mill hour</small></div>` +
+      `<div><small>Our cost</small><span class="big">${money(e.cost)}</span><small>${money(e.milling / Math.max(e.totalHrs, 0.01))} per machine hour to mill</small></div>` +
       `<div class="price"><small>Charge (ex VAT)</small><span class="big">${money(e.price)}</span><small>${money(e.priceInc)} inc VAT ${e.minApplied ? '<span class="pill min">minimum charge</span>' : ""}</small></div>` +
       `<div><small>Profit</small><span class="big">${money(e.profit)}</span><small>${e.price > 0 ? fix(e.profit / e.price * 100, 0) : 0}% of the price</small></div>`;
 
@@ -456,24 +464,23 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
 
     const per = (div) => (div > 0 ? [money(e.cost / div), money(e.price / div)] : ["–", "–"]);
     const rows = [
-      ["Per mill hour (hourly rate)", per(e.totalHrs)],
-      ["Per m³ of log in", per(e.logVol)],
-      ["Per m³ sawn out", per(e.sawn)],
-      ["Per cubic foot sawn out", per(e.sawn * FT3_PER_M3)]
+      ["Per finished linear metre", per(e.lm)],
+      ["Per m³ of sawn board in", per(e.boardM3)],
+      ["Per machine hour, milling only", e.totalHrs > 0 ? [money(e.milling / e.totalHrs), money(e.milling / e.totalHrs / (1 - Math.min(95, n(S.margin)) / 100))] : ["–", "–"]]
     ];
     $("unitRates").tBodies[0].innerHTML = rows.map(([k, [c, p]]) => `<tr><td>${k}</td><td class="r num">${c}</td><td class="r num">${p}</td></tr>`).join("");
 
     $("rateCard").tBodies[0].innerHTML = S.materials.map((mm, i) => {
       const x = estimate(S, mm, S.job);
       const d = (v, div) => (div > 0 ? money(v / div) : "–");
-      return `<tr class="${i === (S.job.material | 0) ? "sel" : ""}"><td>${esc(mm.name)}</td><td class="r num">${fix(x.totalHrs, 1)}</td><td class="r num">${fix(x.sawn, 2)}</td>` +
-        `<td class="r num">${d(x.cost, x.totalHrs)}</td><td class="r num">${d(x.cost, x.sawn)}</td><td class="r num">${d(x.price, x.sawn)}</td>` +
-        `<td class="r num">${d(x.price, x.sawn * FT3_PER_M3)}</td><td class="r num">${money(x.price)}${x.minApplied ? ' <span class="pill min">min</span>' : ""}</td></tr>`;
+      return `<tr class="${i === (S.job.material | 0) ? "sel" : ""}"><td>${esc(mm.name)}</td><td class="r num">${fix(x.totalHrs, 1)}</td><td class="r num">${fix(x.boardM3, 3)}</td>` +
+        `<td class="r num">${d(x.milling, x.totalHrs)}</td><td class="r num">${d(x.cost, x.lm)}</td><td class="r num">${d(x.price, x.lm)}</td>` +
+        `<td class="r num">${d(x.price, x.boardM3)}</td><td class="r num">${money(x.price)}${x.minApplied ? ' <span class="pill min">min</span>' : ""}</td></tr>`;
     }).join("");
 
     const r = e.r;
-    $("powerDerived").innerHTML = `While cutting the mill draws about <b>${fix(r.kwh, 1)} kW</b>: <b>${money(r.electric)}</b> an hour in electric and <b>${money(r.fuel)}</b> an hour in diesel.`;
-    $("ohDerived").innerHTML = `Mill wear works out at <b>${money(r.depreciation)}</b> per mill hour and yard overheads at <b>${money(r.overheads)}</b> per mill hour, over ${fix(n(S.hours), 0)} cutting hours a year. Fewer hours a year means each hour has to carry more.`;
+    $("powerDerived").innerHTML = `While running the machine draws about <b>${fix(r.kwh, 1)} kW</b>: <b>${money(r.electric)}</b> an hour in electric and <b>${money(r.fuel)}</b> an hour in diesel.`;
+    $("ohDerived").innerHTML = `Machine wear works out at <b>${money(r.depreciation)}</b> per machine hour and overheads at <b>${money(r.overheads)}</b> per machine hour, over ${fix(n(S.hours), 0)} running hours a year. Fewer hours a year means each hour has to carry more.`;
 
     lastEstimate = { e, m };
     save();
@@ -501,7 +508,7 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
       if (el.dataset.f === "name") { renderMaterialSelect(); renderCrewChips(); }
       refreshDerivedCells();
       recalc();
-    } else if (el.id === "job-logVol" || el.id === "job-extraHours" || el.id === "job-miles") {
+    } else if (el.id === "job-lm" || el.id === "job-thick" || el.id === "job-width" || el.id === "job-extraHours" || el.id === "job-miles") {
       S.job[el.id.slice(4)] = n(el.value);
       recalc();
     }
@@ -516,7 +523,6 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
   document.addEventListener("change", (ev) => {
     const el = ev.target;
     if (el.id === "job-material") { S.job.material = +el.value; recalc(); }
-    else if (el.id === "job-kiln") { S.job.kiln = el.checked; recalc(); }
     else if (el.dataset.crewOn !== undefined) { S.crew[+el.dataset.crewOn].on = el.checked; recalc(); }
   });
 
@@ -535,7 +541,7 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     switch (b.id) {
       case "addCrew": S.crew.push({ name: "New person", rate: 12.75, on: true }); renderAll(); break;
       case "addOh": S.overheads.push({ name: "New cost", amount: 0 }); renderAll(); break;
-      case "addMat": S.materials.push({ name: "New timber", rate: 0.7, yield: 50, sharpen: 3, setup: 0.5, logPrice: 0 }); renderAll(); break;
+      case "addMat": S.materials.push({ name: "New timber", feed: 8, waste: 15, sharpen: 5, setup: 0.75, price: 0 }); renderAll(); break;
       case "copyQuote": copyText(quoteText(), $("toast"), "Quote copied"); break;
       case "copyBackup": $("backup").value = JSON.stringify(S, null, 1); copyText($("backup").value, $("backupMsg"), "Backup copied"); break;
       case "loadBackup":
@@ -558,8 +564,9 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
     const { e, m } = lastEstimate;
     return [
       `Milling estimate: ${m.name}`,
-      `${fix(e.logVol, 2)} m³ of logs, about ${fix(e.sawn, 2)} m³ sawn (${fix(e.sawn * FT3_PER_M3, 0)} ft³)`,
-      `${fix(e.totalHrs, 1)} mill hours${S.job.kiln ? ", kiln dried" : ""}${n(S.job.miles) > 0 ? `, delivery ${fix(n(S.job.miles), 0)} miles` : ""}`,
+      `${fix(e.lm, 0)} lm from ${fix(n(S.job.thick), 0)} × ${fix(n(S.job.width), 0)} mm sawn${S.job.mode === "service" ? ", customer's timber" : ""}`,
+      `${fix(e.totalHrs, 1)} machine hours${n(S.job.miles) > 0 ? `, delivery ${fix(n(S.job.miles), 0)} miles` : ""}`,
+      `Price per linear metre: ${e.lm > 0 ? money(e.price / e.lm) : "–"} + VAT`,
       `Price: ${money(e.price)} + VAT (${money(e.priceInc)} inc VAT)`
     ].join("\n");
   }
