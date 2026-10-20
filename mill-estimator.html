@@ -1,0 +1,577 @@
+<title>Mill Job Estimator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: two-column workbench — job inputs left, live costing right; rate card and settings follow as full-width bands. */
+:root {
+  --bg: #eef1ee;          /* cool sawdust grey, slight green bias */
+  --panel: #fbfcfa;
+  --ink: #1d2420;
+  --muted: #5d6a63;
+  --line: #d3dbd5;
+  --accent: #9a4d12;      /* resin amber */
+  --accent-soft: #f3e3d3;
+  --good: #2f6b3c;
+  --warn: #9a6a00;
+  --field: #ffffff;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151a17; --panel: #1d2420; --ink: #e6ece7; --muted: #9aa8a0; --line: #334039;
+    --accent: #e39a5b; --accent-soft: #3a2a1c; --good: #7cc48b; --warn: #e2b450; --field: #121614;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151a17; --panel: #1d2420; --ink: #e6ece7; --muted: #9aa8a0; --line: #334039;
+  --accent: #e39a5b; --accent-soft: #3a2a1c; --good: #7cc48b; --warn: #e2b450; --field: #121614;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+table, input, select, button, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; border-bottom: 3px solid var(--ink); padding-bottom: 12px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1 { font-size: 2.6rem; line-height: 1; text-transform: uppercase; }
+h2 { font-size: 1.55rem; text-transform: uppercase; }
+h3 { font-size: 1.15rem; text-transform: uppercase; color: var(--muted); }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 62ch; }
+.eyebrow { font: 600 .72rem/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 14px; }
+label.f { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+label.f span.u { color: var(--muted); font-size: .78rem; }
+input[type=number], input[type=text], select, textarea {
+  width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; color: var(--ink); }
+input[type=number] { font-family: var(--mono); font-size: .92rem; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--field); padding: 7px 12px; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--panel); }
+.check { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.btn { border: 1px solid var(--ink); background: transparent; border-radius: 4px; padding: 7px 12px; cursor: pointer; font-weight: 600; }
+.btn.primary { background: var(--ink); color: var(--panel); }
+.btn.small { padding: 3px 9px; font-size: .82rem; font-weight: 400; border-color: var(--line); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* results */
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.headline div { background: var(--panel); padding: 12px 14px; display: grid; gap: 2px; }
+.headline .big { font: 600 1.6rem/1.1 var(--mono); }
+.headline .price .big { color: var(--accent); }
+.headline small { color: var(--muted); font-size: .8rem; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { text-align: left; font: 600 .72rem/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.r, th.r { text-align: right; }
+tr.total td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: 0; }
+.bar { height: 8px; background: var(--accent-soft); border-radius: 2px; min-width: 60px; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.note { font-size: .82rem; color: var(--muted); }
+.pill { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.min { color: var(--warn); }
+tr.sel td { background: var(--accent-soft); }
+.edit td { padding: 4px 4px; }
+.edit input { padding: 5px 6px; min-width: 70px; }
+.edit input.name { min-width: 150px; }
+details.settings { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+details.settings > summary { cursor: pointer; padding: 14px 18px; font: 600 1.15rem var(--display); text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+details.settings > summary::after { content: "+"; font-family: var(--mono); color: var(--muted); }
+details.settings[open] > summary::after { content: "−"; }
+details.settings > div { padding: 0 18px 18px; display: grid; gap: 14px; }
+.derived { font-size: .85rem; color: var(--muted); }
+.derived b { color: var(--ink); font-family: var(--mono); font-weight: 500; }
+textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
+.toast { color: var(--good); font-size: .85rem; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width .25s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Nick's Timber · sawmill costing</div>
+      <h1>Mill Job Estimator</h1>
+      <p class="sub">Pick a timber, enter the log volume and get the running cost and a selling price. Wages, electric, fuel, blades, machine wear and yard overheads all come from the settings at the bottom, so set those once with your real figures.</p>
+    </div>
+    <div class="row">
+      <button class="btn small" id="copyQuote" type="button">Copy quote summary</button>
+      <span class="toast" id="toast" aria-live="polite"></span>
+    </div>
+  </header>
+
+  <section class="grid2">
+    <!-- Job inputs -->
+    <div class="panel" aria-labelledby="jobH">
+      <h2 id="jobH">The job</h2>
+      <div class="fields">
+        <label class="f" style="grid-column: 1 / -1">Timber
+          <select id="job-material"></select>
+        </label>
+        <label class="f">Log volume in <span class="u">m³ (round logs)</span>
+          <input type="number" id="job-logVol" min="0" step="0.1">
+        </label>
+        <label class="f">Extra handling time <span class="u">hours (loading, awkward logs)</span>
+          <input type="number" id="job-extraHours" min="0" step="0.25">
+        </label>
+        <label class="f">Delivery distance <span class="u">miles (return trip)</span>
+          <input type="number" id="job-miles" min="0" step="1">
+        </label>
+      </div>
+      <div class="row">
+        <span class="eyebrow">Whose logs?</span>
+        <div class="seg" role="group" aria-label="Whose logs">
+          <button type="button" id="mode-service" data-mode="service">Customer's (milling only)</button>
+          <button type="button" id="mode-own" data-mode="own">Ours (include log cost)</button>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="job-kiln"> Kiln dry the sawn timber</label>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px">Crew on this job</div>
+        <div class="row" id="job-crew"></div>
+      </div>
+      <div class="derived" id="jobDerived"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="panel" aria-labelledby="resH">
+      <h2 id="resH">Cost &amp; price</h2>
+      <div class="headline" id="headline"></div>
+      <div class="tablewrap">
+        <table id="breakdown">
+          <thead><tr><th>Cost</th><th>How it's worked out</th><th class="r">£</th><th style="width:22%">Share</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="tablewrap">
+        <table id="unitRates">
+          <thead><tr><th>Per unit</th><th class="r">Cost</th><th class="r">Sell (ex VAT)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="rcH">
+    <div>
+      <h2 id="rcH">Same job, every timber</h2>
+      <p class="sub">The current job's log volume, crew and options run through each timber, so you can see which ones cost more to cut and what to charge for them.</p>
+    </div>
+    <div class="tablewrap">
+      <table id="rateCard">
+        <thead><tr><th>Timber</th><th class="r">Mill hours</th><th class="r">Sawn m³</th><th class="r">Cost / mill hr</th><th class="r">Cost / sawn m³</th><th class="r">Sell / sawn m³</th><th class="r">Sell / ft³</th><th class="r">Job price</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section style="display:grid; gap:12px" aria-labelledby="setH">
+    <div>
+      <h2 id="setH">Settings</h2>
+      <p class="sub">Every figure below starts as an example. Replace them with your own wages, tariffs and bills. Changes save in this browser automatically. Use Back up settings to move them to another device.</p>
+    </div>
+
+    <details class="settings" open>
+      <summary>Wages &amp; crew</summary>
+      <div>
+        <div class="tablewrap"><table class="edit" id="crewTable">
+          <thead><tr><th>Name / role</th><th>£ per hour</th><th>Loaded £/hr</th><th></th></tr></thead><tbody></tbody>
+        </table></div>
+        <div class="row"><button class="btn small" type="button" id="addCrew">Add person</button></div>
+        <div class="fields">
+          <label class="f">Employer on-costs <span class="u">% on top (NI, pension, holiday pay)</span><input type="number" id="s-oncost" step="1" min="0"></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="settings" open>
+      <summary>Electric &amp; fuel</summary>
+      <div>
+        <div class="fields">
+          <label class="f">Mill motor <span class="u">kW</span><input type="number" id="s-millKw" step="0.5" min="0"></label>
+          <label class="f">Average motor load <span class="u">% of full power while cutting</span><input type="number" id="s-load" step="5" min="0" max="100"></label>
+          <label class="f">Other electric kit <span class="u">kW (hydraulics, extraction, lights)</span><input type="number" id="s-auxKw" step="0.5" min="0"></label>
+          <label class="f">Electricity price <span class="u">pence per kWh</span><input type="number" id="s-pence" step="0.5" min="0"></label>
+          <label class="f">Diesel used <span class="u">litres per mill hour (loader, mill engine)</span><input type="number" id="s-litres" step="0.1" min="0"></label>
+          <label class="f">Diesel price <span class="u">£ per litre</span><input type="number" id="s-fuelPrice" step="0.01" min="0"></label>
+        </div>
+        <div class="derived" id="powerDerived"></div>
+      </div>
+    </details>
+
+    <details class="settings" open>
+      <summary>Blades</summary>
+      <div>
+        <div class="fields">
+          <label class="f">New blade <span class="u">£ each</span><input type="number" id="s-bladePrice" step="0.5" min="0"></label>
+          <label class="f">Resharpen &amp; set <span class="u">£ each time</span><input type="number" id="s-sharpenCost" step="0.5" min="0"></label>
+          <label class="f">Sharpens per blade <span class="u">before it's scrapped</span><input type="number" id="s-sharpens" step="1" min="1"></label>
+          <label class="f">Allowance for metal &amp; breakdowns <span class="u">% added to the job cost</span><input type="number" id="s-contingency" step="1" min="0"></label>
+        </div>
+        <p class="note">How long a blade cuts between sharpens depends on the timber, so that figure lives in the timber table below.</p>
+      </div>
+    </details>
+
+    <details class="settings" open>
+      <summary>Machinery &amp; yard overheads</summary>
+      <div>
+        <div class="fields">
+          <label class="f">Mill cost <span class="u">£ purchase price</span><input type="number" id="s-millPrice" step="500" min="0"></label>
+          <label class="f">Value when sold on <span class="u">£</span><input type="number" id="s-residual" step="500" min="0"></label>
+          <label class="f">Years you'll keep it<input type="number" id="s-years" step="1" min="1"></label>
+          <label class="f">Mill hours per year <span class="u">hours you actually cut</span><input type="number" id="s-hours" step="50" min="1"></label>
+        </div>
+        <div class="tablewrap"><table class="edit" id="ohTable">
+          <thead><tr><th>Yearly cost</th><th>£ per year</th><th>Per mill hr</th><th></th></tr></thead><tbody></tbody>
+        </table></div>
+        <div class="row"><button class="btn small" type="button" id="addOh">Add cost</button></div>
+        <div class="derived" id="ohDerived"></div>
+      </div>
+    </details>
+
+    <details class="settings" open>
+      <summary>Timbers</summary>
+      <div>
+        <p class="note">Cutting rate is cubic metres of log the mill gets through per hour of sawing. Yield is the share of the log volume that comes out as sawn timber. Time your own runs and update these, as they make the biggest difference to the price.</p>
+        <div class="tablewrap"><table class="edit" id="matTable">
+          <thead><tr><th>Timber</th><th>Cutting rate m³/hr</th><th>Yield %</th><th>Blade hrs per sharpen</th><th>Set-up hrs per job</th><th>Log price £/m³</th><th></th></tr></thead><tbody></tbody>
+        </table></div>
+        <div class="row"><button class="btn small" type="button" id="addMat">Add timber</button></div>
+      </div>
+    </details>
+
+    <details class="settings" open>
+      <summary>Extras &amp; pricing</summary>
+      <div>
+        <div class="fields">
+          <label class="f">Consumables <span class="u">£ per sawn m³ (stickers, sealer, strapping)</span><input type="number" id="s-consumables" step="0.5" min="0"></label>
+          <label class="f">Kiln drying <span class="u">£ per sawn m³</span><input type="number" id="s-kiln" step="1" min="0"></label>
+          <label class="f">Delivery <span class="u">£ per mile</span><input type="number" id="s-perMile" step="0.05" min="0"></label>
+          <label class="f">Profit margin <span class="u">% of the selling price</span><input type="number" id="s-margin" step="1" min="0" max="95"></label>
+          <label class="f">Minimum job charge <span class="u">£ ex VAT</span><input type="number" id="s-minCharge" step="5" min="0"></label>
+          <label class="f">VAT <span class="u">%</span><input type="number" id="s-vat" step="1" min="0"></label>
+        </div>
+        <p class="note">A 30% margin means 30p in every £1 you charge is profit. That works out as a 43% mark-up on cost.</p>
+      </div>
+    </details>
+
+    <details class="settings">
+      <summary>Back up or move settings</summary>
+      <div>
+        <p class="note">Copy the backup and paste it into this box on another device, then press Load.</p>
+        <textarea id="backup" aria-label="Settings backup"></textarea>
+        <div class="row">
+          <button class="btn small" type="button" id="copyBackup">Copy backup</button>
+          <button class="btn small" type="button" id="loadBackup">Load from box</button>
+          <button class="btn small" type="button" id="resetAll">Reset to example figures</button>
+          <span class="toast" id="backupMsg" aria-live="polite"></span>
+        </div>
+      </div>
+    </details>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const KEY = "nicks-timber-mill-estimator-v1";
+  const FT3_PER_M3 = 35.3147;
+
+  // Example figures (UK, 2026). Replace with real ones in Settings.
+  const DEFAULTS = {
+    crew: [
+      { name: "Sawyer", rate: 16.5, on: true },
+      { name: "Tailer / labourer", rate: 12.75, on: true }
+    ],
+    oncost: 20,
+    millKw: 15, load: 65, auxKw: 2, pence: 26,
+    litres: 1.5, fuelPrice: 1.45,
+    bladePrice: 28, sharpenCost: 7, sharpens: 6, contingency: 5,
+    millPrice: 45000, residual: 12000, years: 10, hours: 1200,
+    overheads: [
+      { name: "Yard rent", amount: 6000 },
+      { name: "Insurance", amount: 2400 },
+      { name: "Business rates", amount: 1500 },
+      { name: "Mill servicing & repairs", amount: 2500 },
+      { name: "Loader / telehandler (finance & upkeep)", amount: 4000 },
+      { name: "Van, phone, accounts, admin", amount: 3500 }
+    ],
+    materials: [
+      { name: "Larch", rate: 1.0, yield: 55, sharpen: 4, setup: 0.5, logPrice: 75 },
+      { name: "Douglas fir", rate: 1.1, yield: 55, sharpen: 4, setup: 0.5, logPrice: 80 },
+      { name: "Western red cedar", rate: 1.2, yield: 55, sharpen: 5, setup: 0.5, logPrice: 110 },
+      { name: "Oak", rate: 0.55, yield: 48, sharpen: 2, setup: 0.75, logPrice: 160 },
+      { name: "Sweet chestnut", rate: 0.65, yield: 50, sharpen: 2.5, setup: 0.75, logPrice: 110 },
+      { name: "Ash / beech / sycamore", rate: 0.7, yield: 50, sharpen: 3, setup: 0.75, logPrice: 85 },
+      { name: "Elm", rate: 0.5, yield: 50, sharpen: 2, setup: 1, logPrice: 120 },
+      { name: "Walnut / fruitwood", rate: 0.35, yield: 42, sharpen: 2.5, setup: 1, logPrice: 300 }
+    ],
+    consumables: 6, kiln: 70, perMile: 1.1,
+    margin: 30, minCharge: 150, vat: 20,
+    job: { material: 3, logVol: 3, extraHours: 0.5, miles: 0, mode: "service", kiln: false }
+  };
+
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  let S = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return Object.assign(clone(DEFAULTS), JSON.parse(raw));
+    } catch (e) { /* storage unavailable */ }
+    return clone(DEFAULTS);
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+  }
+
+  const n = (v) => (isFinite(+v) ? +v : 0);
+  const gbp = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+  const money = (v) => gbp.format(v);
+  const fix = (v, d) => (+v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  // ---- The costing model --------------------------------------------------
+  function hourlyRates(s, job) {
+    const crew = s.crew.filter((c) => c.on);
+    const labour = crew.reduce((t, c) => t + n(c.rate), 0) * (1 + n(s.oncost) / 100);
+    const kwh = n(s.millKw) * n(s.load) / 100 + n(s.auxKw);
+    const electric = kwh * n(s.pence) / 100;
+    const fuel = n(s.litres) * n(s.fuelPrice);
+    const hrs = Math.max(1, n(s.hours));
+    const depreciation = Math.max(0, n(s.millPrice) - n(s.residual)) / Math.max(1, n(s.years)) / hrs;
+    const overheads = s.overheads.reduce((t, o) => t + n(o.amount), 0) / hrs;
+    return { crew, labour, kwh, electric, fuel, depreciation, overheads };
+  }
+
+  function estimate(s, m, job) {
+    const r = hourlyRates(s, job);
+    const logVol = Math.max(0, n(job.logVol));
+    const sawHrs = n(m.rate) > 0 ? logVol / n(m.rate) : 0;
+    const setupHrs = n(m.setup) + n(job.extraHours);
+    const totalHrs = sawHrs + setupHrs;
+    const sawn = logVol * n(m.yield) / 100;
+    const bladePerHr = n(m.sharpen) > 0
+      ? (n(s.bladePrice) / Math.max(1, n(s.sharpens)) + n(s.sharpenCost)) / n(m.sharpen) : 0;
+
+    const lines = [
+      { key: "labour", label: "Wages", how: `${fix(totalHrs, 2)} hrs × ${money(r.labour)}/hr crew (incl. on-costs)`, v: totalHrs * r.labour },
+      { key: "electric", label: "Electric", how: `${fix(sawHrs, 2)} hrs sawing × ${fix(r.kwh, 1)} kW × ${fix(n(s.pence), 1)}p`, v: sawHrs * r.electric },
+      { key: "fuel", label: "Diesel", how: `${fix(sawHrs * n(s.litres), 1)} L × ${money(n(s.fuelPrice))}`, v: sawHrs * r.fuel },
+      { key: "blades", label: "Blades & sharpening", how: `${fix(sawHrs, 2)} hrs × ${money(bladePerHr)}/hr in ${esc(m.name.toLowerCase())}`, v: sawHrs * bladePerHr },
+      { key: "machine", label: "Mill wear (depreciation)", how: `${fix(totalHrs, 2)} hrs × ${money(r.depreciation)}/hr`, v: totalHrs * r.depreciation },
+      { key: "overheads", label: "Yard overheads", how: `${fix(totalHrs, 2)} hrs × ${money(r.overheads)}/hr`, v: totalHrs * r.overheads },
+      { key: "consumables", label: "Consumables", how: `${fix(sawn, 2)} sawn m³ × ${money(n(s.consumables))}`, v: sawn * n(s.consumables) }
+    ];
+    if (job.kiln) lines.push({ key: "kiln", label: "Kiln drying", how: `${fix(sawn, 2)} sawn m³ × ${money(n(s.kiln))}`, v: sawn * n(s.kiln) });
+    if (job.mode === "own") lines.push({ key: "logs", label: "Logs", how: `${fix(logVol, 2)} m³ × ${money(n(m.logPrice))}`, v: logVol * n(m.logPrice) });
+    if (n(job.miles) > 0) lines.push({ key: "delivery", label: "Delivery", how: `${fix(n(job.miles), 0)} miles × ${money(n(s.perMile))}`, v: n(job.miles) * n(s.perMile) });
+
+    const sub = lines.reduce((t, l) => t + l.v, 0);
+    const contingency = sub * n(s.contingency) / 100;
+    if (contingency > 0) lines.push({ key: "contingency", label: "Metal & breakdown allowance", how: `${fix(n(s.contingency), 0)}% of the above`, v: contingency });
+    const cost = sub + contingency;
+
+    const margin = Math.min(95, Math.max(0, n(s.margin)));
+    const marginPrice = cost / (1 - margin / 100);
+    const price = Math.max(marginPrice, n(s.minCharge));
+    const vat = price * n(s.vat) / 100;
+    return {
+      lines, cost, price, vat, priceInc: price + vat, profit: price - cost,
+      minApplied: price > marginPrice, sawHrs, setupHrs, totalHrs, sawn, logVol, r, bladePerHr
+    };
+  }
+
+  // ---- Rendering ----------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const currentMaterial = () => S.materials[Math.min(S.materials.length - 1, Math.max(0, S.job.material | 0))];
+
+  function renderMaterialSelect() {
+    const sel = $("job-material");
+    sel.innerHTML = S.materials.map((m, i) => `<option value="${i}">${esc(m.name || "Unnamed timber")}</option>`).join("");
+    sel.value = String(Math.min(S.materials.length - 1, S.job.material | 0));
+  }
+
+  function renderCrewChips() {
+    $("job-crew").innerHTML = S.crew.map((c, i) =>
+      `<label class="check"><input type="checkbox" id="jobcrew-${i}" data-crew-on="${i}" ${c.on ? "checked" : ""}> ${esc(c.name || "Unnamed")}</label>`
+    ).join("") || `<span class="note">Add people under Wages &amp; crew.</span>`;
+  }
+
+  function editRow(list, i, cols, extra) {
+    return `<tr>${cols.map(([f, type, step]) =>
+      `<td><input id="${list}-${i}-${f}" data-list="${list}" data-i="${i}" data-f="${f}" type="${type}" ${type === "number" ? `step="${step}" min="0"` : ""} class="${f === "name" ? "name" : ""}" value="${esc(S[list][i][f])}" aria-label="${f}"></td>`
+    ).join("")}${extra || ""}<td><button class="btn small" type="button" data-del="${list}" data-i="${i}" aria-label="Remove">Remove</button></td></tr>`;
+  }
+
+  function renderTables() {
+    const onc = 1 + n(S.oncost) / 100;
+    $("crewTable").tBodies[0].innerHTML = S.crew.map((c, i) =>
+      editRow("crew", i, [["name", "text"], ["rate", "number", 0.05]], `<td class="num">${money(n(c.rate) * onc)}</td>`)).join("");
+    const hrs = Math.max(1, n(S.hours));
+    $("ohTable").tBodies[0].innerHTML = S.overheads.map((o, i) =>
+      editRow("overheads", i, [["name", "text"], ["amount", "number", 50]], `<td class="num">${money(n(o.amount) / hrs)}</td>`)).join("");
+    $("matTable").tBodies[0].innerHTML = S.materials.map((m, i) =>
+      editRow("materials", i, [["name", "text"], ["rate", "number", 0.05], ["yield", "number", 1], ["sharpen", "number", 0.5], ["setup", "number", 0.25], ["logPrice", "number", 5]])).join("");
+  }
+
+  function fillScalarInputs() {
+    document.querySelectorAll("input[id^='s-']").forEach((el) => { el.value = S[el.id.slice(2)]; });
+    $("job-logVol").value = S.job.logVol;
+    $("job-extraHours").value = S.job.extraHours;
+    $("job-miles").value = S.job.miles;
+    $("job-kiln").checked = !!S.job.kiln;
+  }
+
+  function recalc() {
+    const m = currentMaterial();
+    if (!m) return;
+    const e = estimate(S, m, S.job);
+    document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === S.job.mode)));
+
+    $("jobDerived").innerHTML =
+      `About <b>${fix(e.sawHrs, 1)} hrs</b> sawing + <b>${fix(e.setupHrs, 2)} hrs</b> set-up and handling = <b>${fix(e.totalHrs, 1)} mill hours</b>. ` +
+      `Expect roughly <b>${fix(e.sawn, 2)} m³</b> sawn (${fix(e.sawn * FT3_PER_M3, 0)} ft³) at ${fix(n(m.yield), 0)}% yield.`;
+
+    $("headline").innerHTML =
+      `<div><small>Our cost</small><span class="big">${money(e.cost)}</span><small>${money(e.cost / Math.max(e.totalHrs, 0.01))} per mill hour</small></div>` +
+      `<div class="price"><small>Charge (ex VAT)</small><span class="big">${money(e.price)}</span><small>${money(e.priceInc)} inc VAT ${e.minApplied ? '<span class="pill min">minimum charge</span>' : ""}</small></div>` +
+      `<div><small>Profit</small><span class="big">${money(e.profit)}</span><small>${e.price > 0 ? fix(e.profit / e.price * 100, 0) : 0}% of the price</small></div>`;
+
+    const max = Math.max(...e.lines.map((l) => l.v), 0.01);
+    $("breakdown").tBodies[0].innerHTML = e.lines.map((l) =>
+      `<tr><td>${l.label}</td><td class="note">${l.how}</td><td class="r num">${money(l.v)}</td><td><div class="bar" title="${fix(l.v / Math.max(e.cost, 0.01) * 100, 0)}%"><i style="width:${(l.v / max * 100).toFixed(1)}%"></i></div></td></tr>`
+    ).join("") + `<tr class="total"><td>Total cost</td><td></td><td class="r num">${money(e.cost)}</td><td class="note">${fix(n(S.margin), 0)}% margin → ${money(e.price)}</td></tr>`;
+
+    const per = (div) => (div > 0 ? [money(e.cost / div), money(e.price / div)] : ["–", "–"]);
+    const rows = [
+      ["Per mill hour (hourly rate)", per(e.totalHrs)],
+      ["Per m³ of log in", per(e.logVol)],
+      ["Per m³ sawn out", per(e.sawn)],
+      ["Per cubic foot sawn out", per(e.sawn * FT3_PER_M3)]
+    ];
+    $("unitRates").tBodies[0].innerHTML = rows.map(([k, [c, p]]) => `<tr><td>${k}</td><td class="r num">${c}</td><td class="r num">${p}</td></tr>`).join("");
+
+    $("rateCard").tBodies[0].innerHTML = S.materials.map((mm, i) => {
+      const x = estimate(S, mm, S.job);
+      const d = (v, div) => (div > 0 ? money(v / div) : "–");
+      return `<tr class="${i === (S.job.material | 0) ? "sel" : ""}"><td>${esc(mm.name)}</td><td class="r num">${fix(x.totalHrs, 1)}</td><td class="r num">${fix(x.sawn, 2)}</td>` +
+        `<td class="r num">${d(x.cost, x.totalHrs)}</td><td class="r num">${d(x.cost, x.sawn)}</td><td class="r num">${d(x.price, x.sawn)}</td>` +
+        `<td class="r num">${d(x.price, x.sawn * FT3_PER_M3)}</td><td class="r num">${money(x.price)}${x.minApplied ? ' <span class="pill min">min</span>' : ""}</td></tr>`;
+    }).join("");
+
+    const r = e.r;
+    $("powerDerived").innerHTML = `While cutting the mill draws about <b>${fix(r.kwh, 1)} kW</b>: <b>${money(r.electric)}</b> an hour in electric and <b>${money(r.fuel)}</b> an hour in diesel.`;
+    $("ohDerived").innerHTML = `Mill wear works out at <b>${money(r.depreciation)}</b> per mill hour and yard overheads at <b>${money(r.overheads)}</b> per mill hour, over ${fix(n(S.hours), 0)} cutting hours a year. Fewer hours a year means each hour has to carry more.`;
+
+    lastEstimate = { e, m };
+    save();
+  }
+  let lastEstimate = null;
+
+  function renderAll() {
+    renderMaterialSelect();
+    renderCrewChips();
+    renderTables();
+    fillScalarInputs();
+    recalc();
+  }
+
+  // ---- Events ------------------------------------------------------------
+  document.addEventListener("input", (ev) => {
+    const el = ev.target;
+    if (el.id && el.id.startsWith("s-")) {
+      S[el.id.slice(2)] = n(el.value);
+      if (el.id === "s-oncost" || el.id === "s-hours") refreshDerivedCells();
+      recalc();
+    } else if (el.dataset.list) {
+      const row = S[el.dataset.list][+el.dataset.i];
+      row[el.dataset.f] = el.type === "number" ? n(el.value) : el.value;
+      if (el.dataset.f === "name") { renderMaterialSelect(); renderCrewChips(); }
+      refreshDerivedCells();
+      recalc();
+    } else if (el.id === "job-logVol" || el.id === "job-extraHours" || el.id === "job-miles") {
+      S.job[el.id.slice(4)] = n(el.value);
+      recalc();
+    }
+  });
+
+  function refreshDerivedCells() {
+    const onc = 1 + n(S.oncost) / 100, hrs = Math.max(1, n(S.hours));
+    [...$("crewTable").tBodies[0].rows].forEach((tr, i) => { tr.cells[2].textContent = money(n(S.crew[i].rate) * onc); });
+    [...$("ohTable").tBodies[0].rows].forEach((tr, i) => { tr.cells[2].textContent = money(n(S.overheads[i].amount) / hrs); });
+  }
+
+  document.addEventListener("change", (ev) => {
+    const el = ev.target;
+    if (el.id === "job-material") { S.job.material = +el.value; recalc(); }
+    else if (el.id === "job-kiln") { S.job.kiln = el.checked; recalc(); }
+    else if (el.dataset.crewOn !== undefined) { S.crew[+el.dataset.crewOn].on = el.checked; recalc(); }
+  });
+
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    if (b.dataset.mode) { S.job.mode = b.dataset.mode; recalc(); return; }
+    if (b.dataset.del) {
+      const list = S[b.dataset.del];
+      if (b.dataset.del === "materials" && list.length <= 1) return;
+      list.splice(+b.dataset.i, 1);
+      if (b.dataset.del === "materials" && S.job.material >= list.length) S.job.material = list.length - 1;
+      renderAll();
+      return;
+    }
+    switch (b.id) {
+      case "addCrew": S.crew.push({ name: "New person", rate: 12.75, on: true }); renderAll(); break;
+      case "addOh": S.overheads.push({ name: "New cost", amount: 0 }); renderAll(); break;
+      case "addMat": S.materials.push({ name: "New timber", rate: 0.7, yield: 50, sharpen: 3, setup: 0.5, logPrice: 0 }); renderAll(); break;
+      case "copyQuote": copyText(quoteText(), $("toast"), "Quote copied"); break;
+      case "copyBackup": $("backup").value = JSON.stringify(S, null, 1); copyText($("backup").value, $("backupMsg"), "Backup copied"); break;
+      case "loadBackup":
+        try {
+          const data = JSON.parse($("backup").value);
+          if (!data || !Array.isArray(data.materials) || !data.materials.length) throw new Error("no timbers");
+          S = Object.assign(clone(DEFAULTS), data);
+          renderAll(); flash($("backupMsg"), "Settings loaded");
+        } catch (e) { flash($("backupMsg"), "That text isn't a settings backup. Copy the whole backup and paste it again."); }
+        break;
+      case "resetAll":
+        if (b.dataset.armed) { S = clone(DEFAULTS); renderAll(); delete b.dataset.armed; b.textContent = "Reset to example figures"; flash($("backupMsg"), "Example figures restored"); }
+        else { b.dataset.armed = "1"; b.textContent = "Press again to wipe your figures"; }
+        break;
+    }
+  });
+
+  function quoteText() {
+    if (!lastEstimate) return "";
+    const { e, m } = lastEstimate;
+    return [
+      `Milling estimate: ${m.name}`,
+      `${fix(e.logVol, 2)} m³ of logs, about ${fix(e.sawn, 2)} m³ sawn (${fix(e.sawn * FT3_PER_M3, 0)} ft³)`,
+      `${fix(e.totalHrs, 1)} mill hours${S.job.kiln ? ", kiln dried" : ""}${n(S.job.miles) > 0 ? `, delivery ${fix(n(S.job.miles), 0)} miles` : ""}`,
+      `Price: ${money(e.price)} + VAT (${money(e.priceInc)} inc VAT)`
+    ].join("\n");
+  }
+  function flash(el, msg) { el.textContent = msg; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ""; }, 3500); }
+  function copyText(text, msgEl, ok) {
+    const fallback = () => {
+      const ta = $("backup"); ta.value = text; ta.closest("details").open = true; ta.focus(); ta.select();
+      flash(msgEl, "Copy blocked here. The text is selected in the backup box, so copy it from there.");
+    };
+    try { navigator.clipboard.writeText(text).then(() => flash(msgEl, ok), fallback); } catch (e) { fallback(); }
+  }
+
+  renderAll();
+})();
+</script>
