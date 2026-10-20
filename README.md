@@ -40,10 +40,9 @@ Pick the hardwood and enter the size the customer wants (e.g. 25 × 150 mm) and 
 - Raw length = finished lm × (1 + length waste %, 0 by default).
 - Raw m³ = raw thickness × raw width × raw length. The **Copy m³** button copies this figure for the mill line.
 
-The page then shows:
+The page then shows two things:
 
-- Hardwood: raw m³ × cost price, sold at the hardwood margin.
-- Milling (lump sum): the softwood costing model run as a milling-only job on the raw board, using that hardwood's feed speed, cutter life and set-up time, sold at the main profit margin.
-- Delivery, the job total ex and inc VAT (never below the minimum job charge), profit, and rates per linear metre and per m³.
+- **Milling charge (lump sum):** the softwood costing model run as a milling-only job on the raw stock, using that hardwood's feed speed, cutter life and set-up time, with the main profit margin and minimum job charge. A table underneath shows what's in it.
+- **Estimated raw stock (m³)**, with what that stock costs at the hardwood's £/m³ shown in the note under the job.
 
 All settings start as example figures. Replace them with real wages, tariffs, bills, timber prices and timed feed speeds. Settings save in the browser; use "Back up or move settings" to copy them to another device.

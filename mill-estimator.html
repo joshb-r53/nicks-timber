@@ -67,10 +67,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 /* results */
 .headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.headline div { background: var(--panel); padding: 12px 14px; display: grid; gap: 2px; }
+.headline > div { background: var(--panel); padding: 12px 14px; display: grid; gap: 2px; }
 .headline .big { font: 600 1.6rem/1.1 var(--mono); }
 .headline .price .big { color: var(--accent); }
-#hwHeadline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .headline small { color: var(--muted); font-size: .8rem; }
 .tablewrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
@@ -100,10 +99,8 @@ textarea { min-height: 110px; font-family: var(--mono); font-size: .8rem; }
 .view[hidden] { display: none; }
 .tabs { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 .tabs .seg button { font: 600 1.05rem var(--display); text-transform: uppercase; letter-spacing: .03em; padding: 8px 16px; }
-.rawbox { border: 2px solid var(--accent); border-radius: 6px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; background: var(--accent-soft); }
-.rawbox .big { font: 600 1.8rem/1.1 var(--mono); }
-.rawbox small { display: block; color: var(--muted); font-size: .8rem; }
-details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted); }
+.copyline { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; }
+
 @media (prefers-reduced-motion: no-preference) { .bar i { transition: width .25s ease; } }
 </style>
 
@@ -219,40 +216,22 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
         <label class="f">Extra handling time <span class="u">hours (sorting, cross-cutting, packing)</span>
           <input type="number" id="hw-extraHours" min="0" step="0.25">
         </label>
-        <label class="f">Delivery distance <span class="u">miles (return trip)</span>
-          <input type="number" id="hw-miles" min="0" step="1">
-        </label>
-      </div>
-      <div class="rawbox">
-        <div>
-          <small>Raw material for the mill line</small>
-          <span class="big" id="hwRawM3"></span>
-          <small id="hwRawHow"></small>
-        </div>
-        <div class="row">
-          <button class="btn small" type="button" id="copyRawM3" style="border-color: var(--accent)">Copy m³</button>
-          <span class="toast" id="rawMsg" aria-live="polite"></span>
-        </div>
       </div>
       <div class="derived" id="hwDerived"></div>
     </div>
 
     <div class="panel" aria-labelledby="hwResH">
-      <h2 id="hwResH">Hardwood cost &amp; price</h2>
-      <div class="headline" id="hwHeadline"></div>
-      <div class="tablewrap">
-        <table id="hwBreakdown">
-          <thead><tr><th>Item</th><th>How it's worked out</th><th class="r">Cost</th><th class="r">Sell (ex VAT)</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <h2 id="hwResH">Milling charge &amp; raw stock</h2>
+      <div class="headline">
+        <div class="price"><small>Milling charge (lump sum, ex VAT)</small><span class="big" id="hwCharge"></span><small id="hwChargeSub"></small></div>
+        <div><small>Estimated raw stock</small><span class="big" id="hwRawM3"></span><small id="hwRawHow"></small>
+          <div class="copyline"><button class="btn small" type="button" id="copyRawM3">Copy m³</button><span class="toast" id="rawMsg" aria-live="polite"></span></div>
+        </div>
       </div>
-      <details class="inner">
-        <summary>What's in the milling lump sum</summary>
-        <div class="tablewrap"><table id="hwMillDetail"><tbody></tbody></table></div>
-      </details>
+      <h3>What's in the milling charge</h3>
       <div class="tablewrap">
-        <table id="hwUnitRates">
-          <thead><tr><th>Per unit</th><th class="r">Cost</th><th class="r">Sell (ex VAT)</th></tr></thead>
+        <table id="hwMillDetail">
+          <thead><tr><th>Cost</th><th>How it's worked out</th><th class="r">£</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -343,10 +322,7 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
           <thead><tr><th>Hardwood</th><th>Cost price £/m³</th><th>Width waste %</th><th>Thickness allowance mm</th><th>Length waste %</th><th>Feed speed m/min</th><th>Cutter hrs per sharpen</th><th>Set-up hrs per job</th><th></th></tr></thead><tbody></tbody>
         </table></div>
         <div class="row"><button class="btn small" type="button" id="addHw">Add hardwood</button></div>
-        <div class="fields">
-          <label class="f">Margin on hardwood <span class="u">% of the selling price of the timber</span><input type="number" id="s-hwMargin" step="1" min="0" max="95"></label>
-        </div>
-        <p class="note">Milling and delivery on hardwood jobs use the profit margin under Extras &amp; pricing.</p>
+        <p class="note">The milling charge uses the profit margin and minimum job charge under Extras &amp; pricing.</p>
       </div>
     </details>
 
@@ -422,8 +398,7 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
       { name: "Iroko", price: 1700, wasteW: 20, thickAdd: 0, wasteL: 0, feed: 5, sharpen: 2, setup: 1 },
       { name: "Tulipwood (American poplar)", price: 950, wasteW: 15, thickAdd: 0, wasteL: 0, feed: 8, sharpen: 5, setup: 0.75 }
     ],
-    hwMargin: 25,
-    hwJob: { species: 0, thick: 25, width: 150, lm: 100, extraHours: 0.5, miles: 0 },
+    hwJob: { species: 0, thick: 25, width: 150, lm: 100, extraHours: 0.5 },
     view: "soft",
     efficiency: 70, consumables: 6, perMile: 1.1,
     margin: 30, minCharge: 150, vat: 20,
@@ -506,7 +481,7 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
   }
 
   // Hardwood: the customer's finished size plus the species' waste gives the raw
-  // board to buy and mill. Milling reuses estimate() as a milling-only job on that board.
+  // stock to mill. The milling charge reuses estimate() as a milling-only job on that stock.
   function hardwoodEstimate(s, h, job) {
     const lm = Math.max(0, n(job.lm));
     const wasteW = Math.max(0, n(h.wasteW)), wasteL = Math.max(0, n(h.wasteL));
@@ -514,29 +489,9 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
     const rawWidth = n(job.width) * (1 + wasteW / 100);
     const rawLm = lm * (1 + wasteL / 100);
     const rawM3 = rawThick * rawWidth * rawLm / 1e6;
-    const finM3 = n(job.thick) * n(job.width) * lm / 1e6;
-
     const mill = estimate(s, { name: h.name, feed: h.feed, sharpen: h.sharpen, setup: h.setup, waste: 0 },
       { lm: rawLm, thick: rawThick, width: rawWidth, extraHours: job.extraHours, miles: 0, mode: "service" });
-    const margin = Math.min(95, Math.max(0, n(s.margin))) / 100;
-    const hwMargin = Math.min(95, Math.max(0, n(s.hwMargin))) / 100;
-
-    const materialCost = rawM3 * n(h.price);
-    const materialSell = materialCost / (1 - hwMargin);
-    const millingCost = mill.cost;
-    const millingSell = millingCost / (1 - margin);
-    const deliveryCost = n(job.miles) * n(s.perMile);
-    const deliverySell = deliveryCost / (1 - margin);
-
-    const cost = materialCost + millingCost + deliveryCost;
-    const listPrice = materialSell + millingSell + deliverySell;
-    const price = Math.max(listPrice, n(s.minCharge));
-    const vat = price * n(s.vat) / 100;
-    return {
-      lm, rawThick, rawWidth, rawLm, rawM3, finM3, wasteW, wasteL, mill,
-      materialCost, materialSell, millingCost, millingSell, deliveryCost, deliverySell,
-      cost, price, vat, priceInc: price + vat, profit: price - cost, minApplied: price > listPrice
-    };
+    return { lm, rawThick, rawWidth, rawLm, rawM3, wasteW, wasteL, mill, rawCost: rawM3 * n(h.price) };
   }
 
   // ---- Rendering ----------------------------------------------------------
@@ -589,7 +544,7 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
     $("job-width").value = S.job.width;
     $("job-extraHours").value = S.job.extraHours;
     $("job-miles").value = S.job.miles;
-    ["thick", "width", "lm", "extraHours", "miles"].forEach((f) => { $("hw-" + f).value = S.hwJob[f]; });
+    ["thick", "width", "lm", "extraHours"].forEach((f) => { $("hw-" + f).value = S.hwJob[f]; });
   }
 
   function recalc() {
@@ -653,33 +608,15 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
     $("hwDerived").innerHTML =
       `Customer wants <b>${mm(n(j.thick))} × ${mm(n(j.width))} mm</b>. ${esc(h.name)} has <b>${fix(x.wasteW, 0)}%</b> added to the width` +
       `${n(h.thickAdd) ? `, <b>${mm(n(h.thickAdd))} mm</b> to the thickness` : ""}${x.wasteL ? ` and <b>${fix(x.wasteL, 0)}%</b> to the length` : ""}, ` +
-      `so you cut it from <b>${mm(x.rawThick)} × ${mm(x.rawWidth)} mm</b> raw: <b>${fix(x.rawM3, 3)} m³</b> at ${money(n(h.price))}/m³. ` +
+      `so you cut it from <b>${mm(x.rawThick)} × ${mm(x.rawWidth)} mm</b> raw: <b>${fix(x.rawM3, 3)} m³</b>, about <b>${money(x.rawCost)}</b> at ${money(n(h.price))}/m³. ` +
       `Milling takes <b>${fix(x.mill.totalHrs, 1)} machine hours</b> (${fix(x.mill.runHrs, 1)} running + ${fix(x.mill.setupHrs, 2)} set-up and handling).`;
 
-    $("hwHeadline").innerHTML =
-      `<div><small>Milling (lump sum)</small><span class="big">${money(x.millingSell)}</span><small>cost ${money(x.millingCost)}</small></div>` +
-      `<div><small>Hardwood</small><span class="big">${money(x.materialSell)}</span><small>cost ${money(x.materialCost)}</small></div>` +
-      `<div class="price"><small>Job price (ex VAT)</small><span class="big">${money(x.price)}</span><small>${money(x.priceInc)} inc VAT ${x.minApplied ? '<span class="pill min">minimum charge</span>' : ""}</small></div>` +
-      `<div><small>Profit</small><span class="big">${money(x.profit)}</span><small>${x.price > 0 ? fix(x.profit / x.price * 100, 0) : 0}% of the price</small></div>`;
-
-    const rows = [
-      ["Hardwood", `${fix(x.rawM3, 3)} m³ × ${money(n(h.price))}, ${fix(n(S.hwMargin), 0)}% margin`, x.materialCost, x.materialSell],
-      ["Milling (lump sum)", `${fix(x.mill.totalHrs, 1)} machine hrs, ${fix(n(S.margin), 0)}% margin`, x.millingCost, x.millingSell]
-    ];
-    if (x.deliveryCost > 0) rows.push(["Delivery", `${fix(n(j.miles), 0)} miles × ${money(n(S.perMile))}`, x.deliveryCost, x.deliverySell]);
-    $("hwBreakdown").tBodies[0].innerHTML = rows.map(([k, how, c, p]) =>
-      `<tr><td>${k}</td><td class="note">${how}</td><td class="r num">${money(c)}</td><td class="r num">${money(p)}</td></tr>`).join("") +
-      `<tr class="total"><td>Total</td><td class="note">${x.minApplied ? "raised to the minimum job charge" : ""}</td><td class="r num">${money(x.cost)}</td><td class="r num">${money(x.price)}</td></tr>`;
-
-    $("hwMillDetail").tBodies[0].innerHTML = x.mill.lines.map((l) =>
-      `<tr><td>${l.label}</td><td class="note">${l.how}</td><td class="r num">${money(l.v)}</td></tr>`).join("");
-
-    const per = (div) => (div > 0 ? [money(x.cost / div), money(x.price / div)] : ["–", "–"]);
-    $("hwUnitRates").tBodies[0].innerHTML = [
-      ["Per finished linear metre", per(x.lm)],
-      ["Per m³ of raw hardwood", per(x.rawM3)],
-      ["Per m³ finished", per(x.finM3)]
-    ].map(([k, [c, p]]) => `<tr><td>${k}</td><td class="r num">${c}</td><td class="r num">${p}</td></tr>`).join("");
+    const e = x.mill;
+    $("hwCharge").textContent = money(e.price);
+    $("hwChargeSub").innerHTML = `${money(e.priceInc)} inc VAT · cost ${money(e.cost)} ${e.minApplied ? '<span class="pill min">minimum charge</span>' : ""}`;
+    $("hwMillDetail").tBodies[0].innerHTML = e.lines.map((l) =>
+      `<tr><td>${l.label}</td><td class="note">${l.how}</td><td class="r num">${money(l.v)}</td></tr>`).join("") +
+      `<tr class="total"><td>Milling cost</td><td class="note">${fix(n(S.margin), 0)}% margin → ${money(e.price)}${e.minApplied ? " (minimum charge)" : ""}</td><td class="r num">${money(e.cost)}</td></tr>`;
 
     lastHardwood = { x, h };
   }
@@ -785,12 +722,8 @@ details.inner > summary { cursor: pointer; font-size: .85rem; color: var(--muted
     return [
       `Hardwood estimate: ${h.name}`,
       `${fix(x.lm, 1)} lm finished at ${fix(n(j.thick), 0)} × ${fix(n(j.width), 0)} mm`,
-      `Raw material: ${fix(x.rawM3, 3)} m³ (${fix(x.rawThick, 0)} × ${fix(x.rawWidth, 0)} mm)`,
-      `Hardwood: ${money(x.materialSell)} + VAT`,
-      `Milling: ${money(x.millingSell)} + VAT`,
-      ...(x.deliveryCost > 0 ? [`Delivery: ${money(x.deliverySell)} + VAT`] : []),
-      `Price per linear metre: ${x.lm > 0 ? money(x.price / x.lm) : "–"} + VAT`,
-      `Price: ${money(x.price)} + VAT (${money(x.priceInc)} inc VAT)${x.minApplied ? ", minimum job charge" : ""}`
+      `Estimated raw stock: ${fix(x.rawM3, 3)} m³ (${fix(x.rawThick, 0)} × ${fix(x.rawWidth, 0)} mm)`,
+      `Milling charge: ${money(x.mill.price)} + VAT (${money(x.mill.priceInc)} inc VAT)${x.mill.minApplied ? ", minimum job charge" : ""}`
     ].join("\n");
   }
   function flash(el, msg) { el.textContent = msg; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ""; }, 3500); }
