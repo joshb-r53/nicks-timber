@@ -46,3 +46,27 @@ The page then shows two things:
 - **Estimated raw stock (m³)**, with what that stock costs at the hardwood's £/m³ shown in the note under the job.
 
 All settings start as example figures. Replace them with real wages, tariffs, bills, timber prices and timed feed speeds. Settings save in the browser; use "Back up or move settings" to copy them to another device.
+
+## Customer delivery calculator for Shopify (`shopify/sections/delivery-calculator.liquid`)
+
+A theme section for the online store. Customers enter a postcode or town and see the delivery price, plus how much more they need to spend for free delivery (worked out from what's already in their basket). It uses the same rate card as the team Delivery Rates page, but only shows prices, never what a run costs us.
+
+**Installing it**
+
+1. In Shopify admin go to Online Store → Themes. On the theme you want, click ⋯ → Edit code. Try it on a copy of the live theme first.
+2. Under Sections, click "Add a new section", name it `delivery-calculator`, delete the starter code, and paste in the whole file.
+3. Save, then open Customize. Add the "Delivery calculator" section wherever you want it: a Delivery page, the basket page, or product pages.
+
+**Changing the prices**
+
+The prices are set in the theme editor, not in the code. Click the section to see its blocks:
+
+- **Charge band:** "Up to X miles" and the flat charge (£ ex VAT). One block per band.
+- **Free delivery:** "Up to X miles" and the minimum order (£ ex VAT) for free delivery. One block per band.
+- Section settings: minimum charge, the per-mile price past the last band (blank = "please call us"), free delivery past the last band, the furthest you deliver, contact details and the wording.
+
+The defaults are the team rates from 21 Oct 2026 (diesel 199p). When the team rates change, update the blocks to match the team Delivery Rates page.
+
+**How it works:** the postcode or place is looked up with the free postcodes.io service (Ordnance Survey and ONS data). The road distance is the straight-line distance from the yard × 1.2, the same as on the team page. The basket total is read from the store, which shows prices ex VAT, so it compares straight against the free-delivery amounts. The customer's last postcode is remembered in their browser.
+
+It's a guide price on the store pages; it does not add delivery at checkout.
