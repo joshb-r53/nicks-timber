@@ -40,14 +40,14 @@
 
   <script type="application/json" class="ntdc__config">
     {
-      "yard": [{{ section.settings.yard_lat | default: 51.8495 }}, {{ section.settings.yard_lon | default: -2.2565 }}],
+      "yard": [{{ section.settings.yard_lat | default: "51.8495" | plus: 0 }}, {{ section.settings.yard_lon | default: "-2.2565" | plus: 0 }}],
       "roadFactor": {{ section.settings.road_factor | default: 1.2 }},
       "vat": {{ section.settings.vat | default: 20 }},
       "pricesIncVat": {% if section.settings.prices_inc_vat %}true{% else %}false{% endif %},
       "roundTo": {{ section.settings.round_to | default: 5 }},
       "minCharge": {{ section.settings.min_charge | default: 0 }},
-      "beyondBase": {{ section.settings.beyond_base | default: 0 }},
-      "beyondPerMile": {{ section.settings.beyond_per_mile | default: 0 }},
+      "beyondBase": {{ section.settings.beyond_base | default: "0" | plus: 0 }},
+      "beyondPerMile": {{ section.settings.beyond_per_mile | default: "0" | plus: 0 }},
       "maxMiles": {{ section.settings.max_miles | default: 0 }},
       "freeBeyond": {{ section.settings.free_beyond | default: 0 }},
       "phone": {{ section.settings.phone | json }},
@@ -266,8 +266,8 @@
     { "type": "header", "content": "Pricing" },
     { "type": "paragraph", "content": "Add one Charge band block per distance band, and one Free delivery block per free-delivery band. Prices and order values are £ ex VAT." },
     { "type": "number", "id": "min_charge", "label": "Minimum charge (£ ex VAT)", "default": 25 },
-    { "type": "number", "id": "beyond_base", "label": "Past the last charge band: fixed part (£ ex VAT)", "default": 11.58 },
-    { "type": "number", "id": "beyond_per_mile", "label": "Past the last charge band: £ per mile (blank = ask customer to call)", "default": 1.83 },
+    { "type": "text", "id": "beyond_base", "label": "Past the last charge band: fixed part (£ ex VAT)", "default": "11.58" },
+    { "type": "text", "id": "beyond_per_mile", "label": "Past the last charge band: £ per mile (blank = ask customer to call)", "default": "1.83" },
     { "type": "select", "id": "round_to", "label": "Round per-mile prices up to", "default": "5", "options": [ { "value": "1", "label": "£1" }, { "value": "5", "label": "£5" }, { "value": "10", "label": "£10" } ] },
     { "type": "number", "id": "max_miles", "label": "Furthest we deliver (miles, blank = no limit)" },
     { "type": "number", "id": "free_beyond", "label": "Past the last free band: free on orders from (£ ex VAT, blank = none)", "default": 1500 },
@@ -275,8 +275,8 @@
     { "type": "number", "id": "vat", "label": "VAT rate (%)", "default": 20 },
 
     { "type": "header", "content": "Distance" },
-    { "type": "number", "id": "yard_lat", "label": "Yard latitude", "default": 51.8495 },
-    { "type": "number", "id": "yard_lon", "label": "Yard longitude", "default": -2.2565 },
+    { "type": "text", "id": "yard_lat", "label": "Yard latitude", "default": "51.8495" },
+    { "type": "text", "id": "yard_lon", "label": "Yard longitude", "default": "-2.2565" },
     { "type": "number", "id": "road_factor", "label": "Road miles factor (× straight-line miles)", "default": 1.2 }
   ],
   "blocks": [
